@@ -16,6 +16,20 @@ pip install python-telegram
 
 ## How to use
 
+You have to build tdlib and install it. Or you can use it with [docker](https://github.com/alexander-akhmetov/tdlib-docker).
+
+### How to build tdlib
+
+[Official documentation](https://github.com/tdlib/td#building)
+
+Do not forget install the library after:
+
+```sh
+make install
+```
+
+### How to use this library
+
 Basic example:
 
 ```python
@@ -26,7 +40,6 @@ Basic example:
         api_id=args.api_id,
         api_hash=args.api_hash,
         phone=args.phone,
-        library_path='/usr/local/lib/libtdjson.dylib',
     )
     tg.login()
 

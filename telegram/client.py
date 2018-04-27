@@ -154,7 +154,7 @@ class Telegram(object):
     def _update_async_result(self, update: dict) -> typing.Optional[AsyncResult]:
         async_result = None
 
-        _special_types = ('updateAuthorizationState', )
+        _special_types = ('updateAuthorizationState', )  # for authorizationProcess @extra.request_id doesn't work
         if update.get('@type') in _special_types:
             request_id = update['@type']
         else:
@@ -181,17 +181,18 @@ class Telegram(object):
         if func not in self._message_handlers:
             self._message_handlers.append(func)
 
-    def _send_data(self, data: dict, id: str = None) -> AsyncResult:
+    def _send_data(self, data: dict, result_id: str = None) -> AsyncResult:
         if '@extra' not in data:
             data['@extra'] = {}
-        if 'request_id' in data['@extra']:
-            async_result = AsyncResult(client=self, result_id=data['@extra']['request_id'])
-        elif id is not None:
-            async_result = AsyncResult(client=self, result_id=id)
-            data['@extra']['request_id'] = id
-        else:
-            async_result = AsyncResult(client=self)
-            data['@extra']['request_id'] = async_result.id
+
+        if not result_id and 'request_id' in data['@extra']:
+            result_id = data['@extra']['request_id']
+
+        async_result = AsyncResult(
+            client=self,
+            result_id=result_id,
+        )
+        data['@extra']['request_id'] = async_result.id
 
         self._tdjson.send(data)
         self._results[async_result.id] = async_result
@@ -248,14 +249,14 @@ class Telegram(object):
                 'files_directory': f'.tdlib_files_{self.phone}/files',
             }
         }
-        return self._send_data(data, id='updateAuthorizationState')
+        return self._send_data(data, result_id='updateAuthorizationState')
 
     def _send_encryption_key(self) -> AsyncResult:
         data = {
             '@type': 'checkDatabaseEncryptionKey',
             'encryption_key': 'changeme1234',
         }
-        return self._send_data(data, id='updateAuthorizationState')
+        return self._send_data(data, result_id='updateAuthorizationState')
 
     def _send_phone_number(self) -> AsyncResult:
         data = {
@@ -264,7 +265,7 @@ class Telegram(object):
             'allow_flash_call': False,
             'is_current_phone_number': True,
         }
-        return self._send_data(data, id='updateAuthorizationState')
+        return self._send_data(data, result_id='updateAuthorizationState')
 
     def _send_telegram_code(self) -> AsyncResult:
         code = input('Enter code:')
@@ -272,7 +273,7 @@ class Telegram(object):
             '@type': 'checkAuthenticationCode',
             'code': str(code),
         }
-        return self._send_data(data, id='updateAuthorizationState')
+        return self._send_data(data, result_id='updateAuthorizationState')
 
     def _send_password(self) -> AsyncResult:
         password = getpass.getpass('Password:')
@@ -280,7 +281,7 @@ class Telegram(object):
             '@type': 'checkAuthenticationPassword',
             'password': password,
         }
-        return self._send_data(data, id='updateAuthorizationState')
+        return self._send_data(data, result_id='updateAuthorizationState')
 
     def _complete_authorization(self) -> None:
         self._authorized = True

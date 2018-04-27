@@ -1,0 +1,3 @@
+recursive-include telegram *.py
+recursive-include tests *.py
+global-exclude *.pyc

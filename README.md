@@ -7,7 +7,7 @@
 Client for the [tdlib](https://github.com/tdlib/td) library (very early stage :) ).
 It can receive messages, process them and send some text back for now.
 
-[Changelog](CHQNGELOG.md)
+[Changelog](CHANGELOG.md)
 
 ## Installation
 

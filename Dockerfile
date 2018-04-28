@@ -1,4 +1,4 @@
-FROM tdlib
+FROM akhmetov/tdlib
 
 RUN apk update && apk add python3
 RUN python3 -m ensurepip --upgrade

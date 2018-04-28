@@ -31,7 +31,7 @@ setup(
     description='Python library to interact with Telegram\'s tdlib (https://github.com/tdlib/td)',
     author='Aleksandr Akhmetov',
     author_email='me@aleks.sh',
-    url='',
+    url='https://github.com/alexander-akhmetov/python-telegram',
     packages=[
         'telegram',
     ],

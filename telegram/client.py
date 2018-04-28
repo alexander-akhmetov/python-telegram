@@ -244,9 +244,9 @@ class Telegram(object):
                 'system_version': 'Unknown',
                 'application_version': '0.0.1',
                 'system_language_code': 'en',
-                'database_directory': f'.tdlib_files_{self.phone}/database/',
+                'database_directory': f'/tmp/.tdlib_files_{self.phone}/database/',
                 'use_message_database': True,
-                'files_directory': f'.tdlib_files_{self.phone}/files',
+                'files_directory': f'/tmp/.tdlib_files_{self.phone}/files',
             }
         }
         return self._send_data(data, result_id='updateAuthorizationState')

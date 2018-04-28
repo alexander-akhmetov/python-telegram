@@ -1,3 +1,7 @@
 FROM tdlib
 
-ADD telegram /app/telegram
+RUN apk update && apk add python3
+RUN python3 -m ensurepip --upgrade
+RUN python3 -m pip install python-telegram
+
+ADD ./telegram/examples/*.py /app/examples/

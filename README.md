@@ -57,3 +57,14 @@ Basic example:
 ```
 
 More examples you can find in `telegram/examples/`.
+
+
+### Docker
+
+Try to use docker if you don't want to build tdlib:
+
+```sh
+API_ID=your_id API_HASH=your_hash PHONE=+123 CHAT_ID=chat_id TEXT='Hello world' make docker-send-message
+```
+
+It will start pre-built docker container with `tdlib` and `python-telegram` inside.

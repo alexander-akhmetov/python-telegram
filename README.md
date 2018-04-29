@@ -20,6 +20,7 @@ pip install python-telegram
 ## How to use
 
 You have to build tdlib and install it. Or you can use it with [docker](https://github.com/alexander-akhmetov/tdlib-docker).
+Also, you need to register a new [telegram app](http://my.telegram.org/apps/) to get `API_ID` and `API_HASH`.
 
 ### How to build tdlib
 
@@ -60,7 +61,6 @@ Basic example:
 ```
 
 More examples you can find in `telegram/examples/`.
-
 
 ### Docker
 

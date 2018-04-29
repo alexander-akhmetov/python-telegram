@@ -133,6 +133,21 @@ class Telegram(object):
         }
         return self._send_data(data)
 
+    def get_web_page_instant_view(self, url: str, force_full: bool = False):
+        data = {
+            '@type': 'getWebPageInstantView',
+            'url': url,
+            'force_full': force_full,
+        }
+        return self._send_data(data)
+
+    def call_method(self, method_name: str, params: Dict[str, Any]):
+        data = {
+            '@type': method_name,
+        }
+        data.update(params)
+        return self._send_data(data)
+
     def _run(self):
         self._is_enabled = True
 

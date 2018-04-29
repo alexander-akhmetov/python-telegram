@@ -7,7 +7,7 @@ from utils import setup_logging
 
 
 if __name__ == '__main__':
-    setup_logging(level=logging.DEBUG)
+    setup_logging(level=logging.INFO)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('api_id', help='API id')  # https://my.telegram.org/apps
@@ -48,5 +48,3 @@ if __name__ == '__main__':
         print(f'send message error: {result.error_info}')
     else:
         print(f'message has been sent: {result.update}')
-
-    tg.idle()

@@ -41,8 +41,8 @@ if __name__ == '__main__':
 
     result.wait()
     if result.error:
-        print(f'error: {result.error_info}')
+        print('error: {}'.format(result.error_info))
     else:
         print('Instant view: ')
         short_text = result.update['page_blocks'][0]['title']['text']
-        print(f'\n    {short_text}')
+        print('\n    {}'.format(short_text))

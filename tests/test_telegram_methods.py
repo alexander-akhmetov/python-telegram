@@ -172,9 +172,9 @@ class TestTelegram(object):
                 'system_version': 'unknown',
                 'application_version': VERSION,
                 'system_language_code': 'en',
-                'database_directory': f'/tmp/.tdlib_files/{PHONE}/database',
+                'database_directory': '/tmp/.tdlib_files/{}/database'.format(PHONE),
                 'use_message_database': True,
-                'files_directory': f'/tmp/.tdlib_files/{PHONE}/files',
+                'files_directory': '/tmp/.tdlib_files/{}/files'.format(PHONE),
             },
             '@extra': {
                 'request_id': 'updateAuthorizationState',

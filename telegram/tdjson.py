@@ -24,7 +24,7 @@ def _get_tdjson_lib_path():
         lib_name = 'linux/libtdjson.so'
     return pkg_resources.resource_filename(
         'telegram',
-        f'lib/{lib_name}',
+        'lib/{}'.format(lib_name),
     )
 
 
@@ -32,7 +32,7 @@ class TDJson(object):
     def __init__(self, library_path: str = None) -> None:
         if library_path is None:
             library_path = _get_tdjson_lib_path()
-        logger.info(f'Using shared library "{library_path}"')
+        logger.info('Using shared library "{}"'.format(library_path))
 
         self._build_client(library_path)
 
@@ -92,13 +92,13 @@ class TDJson(object):
     def send(self, query: Dict[Any, Any]) -> None:
         dumped_query = json.dumps(query).encode('utf-8')
         self._td_json_client_send(self.td_json_client, dumped_query)
-        logger.debug(f'[me ==>] Sent {dumped_query}')
+        logger.debug('[me ==>] Sent {}'.format(dumped_query))
 
     def receive(self) -> Dict[Any, Any]:
         result = self._td_json_client_receive(self.td_json_client, 1.0)
         if result:
             result = json.loads(result.decode('utf-8'))
-            logger.debug(f'[me <==] Received {result}')
+            logger.debug('[me <==] Received {}'.format(result))
         return result
 
     def td_execute(self, query: Dict[Any, Any]) -> Dict[Any, Any]:

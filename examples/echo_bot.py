@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
         if message_content['@type'] == 'messageText' and message_text == 'ping':
             chat_id = update['message']['chat_id']
-            print(f'Ping has been received from {chat_id}')
+            print('Ping has been received from {}'.format(chat_id))
             tg.send_message(
                 chat_id=chat_id,
                 text='pong',

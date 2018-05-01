@@ -2,6 +2,11 @@
 Changelog
 =========
 
+[0.6.0] - 2018-05-01
+--------------------
+
+Now library supports python3.5 too, not only python 3.6.
+
 [0.5.0] - 2018-05-01
 --------------------
 

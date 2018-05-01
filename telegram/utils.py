@@ -22,7 +22,7 @@ class AsyncResult(object):
         self.update = None
 
     def __str__(self):
-        return f'AsyncResult <{self.id}>'
+        return 'AsyncResult <{}>'.format(self.id)
 
     def wait(self, timeout: int = None, raise_exc: bool = False) -> None:
         """
@@ -32,7 +32,7 @@ class AsyncResult(object):
         while True:
             if self.update or self.error:
                 if raise_exc and self.error:
-                    raise RuntimeError(f'Telegram error: {self.error_info}')
+                    raise RuntimeError('Telegram error: {}'.format(self.error_info))
                 return
             time.sleep(0.01)
             if timeout and time.time() - started_at > timeout:

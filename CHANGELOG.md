@@ -7,7 +7,7 @@ Added two new methods:
 - `get_instant_view` - get instant view of a web page
 - `call_method` - call any method with any params
 
-New example: [get_instant_view.py](telegram/examples/get_instant_view.py)
+New example: [get_instant_view.py](examples/get_instant_view.py)
 
 ## [0.3.1] - 2018-04-29
 

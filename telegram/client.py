@@ -20,7 +20,8 @@ class Telegram(object):
                  api_hash: str,
                  phone: str,
                  library_path: str = None,
-                 worker: Optional[Type[BaseWorker]] = None) -> None:
+                 worker: Optional[Type[BaseWorker]] = None,
+                 database_encryption_key: str = None) -> None:
         """
         Args:
             api_id - ID of your app (https://my.telegram.org/apps/)
@@ -33,6 +34,7 @@ class Telegram(object):
         self.api_hash = api_hash
         self.library_path = library_path
         self.phone = phone
+        self._database_encryption_key = database_encryption_key or 'changeme1234'
         self._authorized = False
         self._is_enabled = False
         self._queue: queue.Queue = queue.Queue()
@@ -134,6 +136,13 @@ class Telegram(object):
         return self._send_data(data)
 
     def get_web_page_instant_view(self, url: str, force_full: bool = False):
+        """
+        Use this method to request instant preview of a webpage
+
+        Args:
+            url: URL of a webpage
+            force_full: If true, the full instant view for the web page will be returned
+        """
         data = {
             '@type': 'getWebPageInstantView',
             'url': url,
@@ -142,6 +151,13 @@ class Telegram(object):
         return self._send_data(data)
 
     def call_method(self, method_name: str, params: Dict[str, Any]):
+        """
+        Use this method to call any other method of the tdlib
+
+        Args:
+            method_name: Name of the method
+            params: parameters
+        """
         data = {
             '@type': method_name,
         }
@@ -241,13 +257,14 @@ class Telegram(object):
         }
 
         while not self._authorized:
-            logger.info(f'Current state: {authorization_state}')
+            logger.info(f'Current authorization state: {authorization_state}')
             result = actions[authorization_state]()
             if result:
                 result.wait(raise_exc=True)
                 authorization_state = result.update['authorization_state']['@type']
 
     def _set_initial_params(self) -> AsyncResult:
+        logger.info('Setting tdlib initial params')
         data = {
             # todo: params
             '@type': 'setTdlibParameters',
@@ -267,13 +284,15 @@ class Telegram(object):
         return self._send_data(data, result_id='updateAuthorizationState')
 
     def _send_encryption_key(self) -> AsyncResult:
+        logger.info('Sending encryption key')
         data = {
             '@type': 'checkDatabaseEncryptionKey',
-            'encryption_key': 'changeme1234',
+            'encryption_key': self._database_encryption_key,
         }
         return self._send_data(data, result_id='updateAuthorizationState')
 
     def _send_phone_number(self) -> AsyncResult:
+        logger.info('Sending phone number')
         data = {
             '@type': 'setAuthenticationPhoneNumber',
             'phone_number': self.phone,
@@ -283,6 +302,7 @@ class Telegram(object):
         return self._send_data(data, result_id='updateAuthorizationState')
 
     def _send_telegram_code(self) -> AsyncResult:
+        logger.info('Sending code')
         code = input('Enter code:')
         data = {
             '@type': 'checkAuthenticationCode',
@@ -291,6 +311,7 @@ class Telegram(object):
         return self._send_data(data, result_id='updateAuthorizationState')
 
     def _send_password(self) -> AsyncResult:
+        logger.info('Sending password')
         password = getpass.getpass('Password:')
         data = {
             '@type': 'checkAuthenticationPassword',
@@ -299,4 +320,5 @@ class Telegram(object):
         return self._send_data(data, result_id='updateAuthorizationState')
 
     def _complete_authorization(self) -> None:
+        logger.info('Completing auth process')
         self._authorized = True

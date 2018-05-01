@@ -60,7 +60,7 @@ Basic example:
     result.wait()
 ```
 
-More examples you can find in `telegram/examples/`.
+More examples you can find in `/examples/`.
 
 ### Docker
 

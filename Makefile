@@ -13,6 +13,13 @@ docker-echo-bot:
 				akhmetov/python-telegram \
 				python3 /app/examples/echo_bot.py $(API_ID) $(API_HASH) $(PHONE)
 
+docker-get-instant-view:
+	docker run -i -t \
+				-v /tmp/docker-python-telegram/:/tmp/ \
+				akhmetov/python-telegram \
+				python3 /app/examples/echo_bot.py $(API_ID) $(API_HASH) $(PHONE)
+
+
 release-pypi:
 	test -n "$(VERSION)"
 	python setup.py sdist

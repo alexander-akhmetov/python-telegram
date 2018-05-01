@@ -17,7 +17,7 @@ class TestAsyncResult(object):
         with mocker.mock_module.patch('telegram.utils.uuid', mocked_uuid):
             ar = AsyncResult(client=None)
 
-        assert ar.__str__() == 'AsyncResult <some-id>'
+        assert ar.__str__() == f'AsyncResult <some-id>'
 
     def test_parse_update_with_error(self):
         ar = AsyncResult(client=None)

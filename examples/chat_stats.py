@@ -38,7 +38,7 @@ def retreive_messages(telegram, chat_id, receive_limit):
         if total_messages > receive_limit or not response.update['total_count']:
             receive = False
 
-        print('[{}/{}] received'.format(total_messages, receive_limit))
+        print(f'[{total_messages}/{receive_limit}] received')
 
     return stats_data
 
@@ -53,7 +53,7 @@ def print_stats(stats_data, most_common_count):
                 words[word] += 1
 
     for word, count in words.most_common(most_common_count):
-        print('{}: {}'.format(word, count))
+        print(f'{word}: {count}')
 
 
 if __name__ == '__main__':

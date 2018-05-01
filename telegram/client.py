@@ -61,7 +61,7 @@ class Telegram(object):
         self._database_encryption_key = database_encryption_key
 
         if not files_directory:
-            files_directory = '/tmp/.tdlib_files/{}/'.format(self.phone)
+            files_directory = f'/tmp/.tdlib_files/{self.phone}/'
         self.files_directory = files_directory
 
         self._authorized = False
@@ -247,7 +247,7 @@ class Telegram(object):
             async_result = self._results.get(request_id)
 
         if not async_result:
-            logger.debug('async_result has not been found in by request_id={}'.format(request_id))
+            logger.debug(f'async_result has not been found in by request_id={request_id}')
         else:
             async_result._parse_update(update)
 
@@ -312,16 +312,14 @@ class Telegram(object):
         logger.info('[login] Login process has been started')
 
         while not self._authorized:
-            logger.info('[login] current authorization state: {}'.format(authorization_state))
+            logger.info(f'[login] current authorization state: {authorization_state}')
             result = actions[authorization_state]()
             if result:
                 result.wait(raise_exc=True)
                 authorization_state = result.update['authorization_state']['@type']
 
     def _set_initial_params(self) -> AsyncResult:
-        logger.info(
-            'Setting tdlib initial params: files_dir={} test_dc={}'.format(self.files_directory, self.use_test_dc),
-        )
+        logger.info(f'Setting tdlib initial params: files_dir={self.files_directory} test_dc={self.use_test_dc}')
         data = {
             # todo: params
             '@type': 'setTdlibParameters',

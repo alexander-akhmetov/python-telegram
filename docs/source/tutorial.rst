@@ -68,7 +68,7 @@ Let's add more logic inside the message handler:
 
         if message_text == 'ping':
             chat_id = update['message']['chat_id']
-            print('Ping has been received from {}'.format(chat_id)
+            print(f'Ping has been received from {chat_id}')
             tg.send_message(
                 chat_id=chat_id,
                 text='pong',
@@ -96,7 +96,7 @@ The full code:
 
         if message_text == 'ping':
             chat_id = update['message']['chat_id']
-            print('Ping has been received from {}'.format(chat_id))
+            print(f'Ping has been received from {chat_id}')
             tg.send_message(
                 chat_id=chat_id,
                 text='pong',

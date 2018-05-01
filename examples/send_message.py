@@ -43,9 +43,9 @@ if __name__ == '__main__':
     result.wait()
 
     if result.error:
-        print('get chats error:', result.error_info)
+        print(f'get chats error: {result.error_info}')
     else:
-        print('chats:', result.update)
+        print(f'chats: {result.update}')
 
     result = tg.send_message(
         chat_id=args.chat_id,
@@ -54,6 +54,6 @@ if __name__ == '__main__':
 
     result.wait()
     if result.error:
-        print('send message error:', result.error_info)
+        print(f'send message error: {result.error_info}')
     else:
-        print('message has been sent:', result.update)
+        print(f'message has been sent: {result.update}')

@@ -14,7 +14,7 @@ If helps you build your own Telegram clients.
 
 ## Installation
 
-This library works with python3 only.
+This library works with python-3.6 only.
 Install with pip:
 
 ```sh

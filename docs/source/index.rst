@@ -16,7 +16,7 @@ Client for the `tdlib <https://github.com/tdlib/td>`_ library (at very early sta
 Installation
 ------------
 
-This library works with python3 only.
+This library works with python-3.6 only.
 
 .. code-block:: bash
 

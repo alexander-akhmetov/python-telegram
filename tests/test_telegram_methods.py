@@ -1,5 +1,6 @@
 import pytest
 
+from telegram import VERSION
 from telegram.utils import AsyncResult
 from telegram.client import Telegram
 
@@ -8,6 +9,7 @@ API_ID = 1
 API_HASH = 'hash'
 PHONE = '+71234567890'
 LIBRARY_PATH = '/lib/'
+DATABASE_ENCRYPTION_KEY = 'changeme1234'
 
 
 @pytest.fixture
@@ -19,6 +21,7 @@ def telegram(mocker):
                 api_hash=API_HASH,
                 phone=PHONE,
                 library_path=LIBRARY_PATH,
+                database_encryption_key=DATABASE_ENCRYPTION_KEY,
             )
     return tg
 
@@ -43,6 +46,45 @@ class TestTelegram(object):
                     'text': text,
                 },
             },
+            '@extra': {
+                'request_id': async_result.id,
+            },
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
+    def test_call_method(self, telegram):
+        method_name = 'someMethod'
+        params = {
+            'param_1': 'value_1',
+            'param_2': 2,
+        }
+
+        async_result = telegram.call_method(method_name=method_name, params=params)
+
+        exp_data = {
+            '@type': method_name,
+            '@extra': {
+                'request_id': async_result.id,
+            },
+        }
+        exp_data.update(params)
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
+    def test_get_web_page_instant_view(self, telegram):
+        url = 'https://yandex.ru/'
+        force_full = False
+
+        async_result = telegram.get_web_page_instant_view(
+            url=url,
+            force_full=force_full,
+        )
+
+        exp_data = {
+            '@type': 'getWebPageInstantView',
+            'url': url,
+            'force_full': force_full,
             '@extra': {
                 'request_id': async_result.id,
             },
@@ -126,13 +168,13 @@ class TestTelegram(object):
                 'use_test_dc': False,
                 'api_id': API_ID,
                 'api_hash': API_HASH,
-                'device_model': 'pytd',
-                'system_version': 'Unknown',
-                'application_version': '0.0.1',
+                'device_model': 'python-telegram',
+                'system_version': 'unknown',
+                'application_version': VERSION,
                 'system_language_code': 'en',
-                'database_directory': f'/tmp/.tdlib_files_{PHONE}/database/',
+                'database_directory': f'/tmp/.tdlib_files/{PHONE}/database',
                 'use_message_database': True,
-                'files_directory': f'/tmp/.tdlib_files_{PHONE}/files',
+                'files_directory': f'/tmp/.tdlib_files/{PHONE}/files',
             },
             '@extra': {
                 'request_id': 'updateAuthorizationState',

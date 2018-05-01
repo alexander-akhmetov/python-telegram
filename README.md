@@ -6,10 +6,11 @@
 ![Read the Docs (version)](https://img.shields.io/readthedocs/pip/stable.svg)
 
 Client for the [tdlib](https://github.com/tdlib/td) library (very early stage :) ).
-It can receive messages, process them and send some text back for now.
+If helps you build your own Telegram clients.
 
-[Changelog](docs/source/changelog.rst)
-[Documentation](http://python-telegram.readthedocs.io)
+* [Changelog](docs/source/changelog.rst)
+* [Documentation](http://python-telegram.readthedocs.io)
+* [Tutorial](http://python-telegram.readthedocs.io/en/latest/tutorial.html)
 
 ## Installation
 
@@ -21,31 +22,23 @@ pip install python-telegram
 
 ## How to use
 
-You have to build tdlib and install it. Or you can use it with [docker](https://github.com/alexander-akhmetov/tdlib-docker).
-Also, you need to register a new [telegram app](http://my.telegram.org/apps/) to get `API_ID` and `API_HASH`.
-
-### How to build tdlib
-
-[Official documentation](https://github.com/tdlib/td#building)
-
-Do not forget install the library after:
-
-```sh
-make install
-```
+This package already contains [pre-built tdlib](https://github.com/tdlib/td#building).
+And you must register a new [telegram app](http://my.telegram.org/apps/) to get `API_ID` and `API_HASH`.
 
 ### How to use this library
+
+Check the [tutorial](http://python-telegram.readthedocs.io/en/latest/tutorial.html) :)
 
 Basic example:
 
 ```python
     from telegram.client import Telegram
 
-
     tg = Telegram(
-        api_id=args.api_id,
-        api_hash=args.api_hash,
-        phone=args.phone,
+        api_id='api_id',
+        api_hash='api_hash',
+        phone='+31611111111',
+        database_encryption_key='changekey123',
     )
     tg.login()
 
@@ -53,23 +46,30 @@ Basic example:
     # otherwise the message will not be sent
     result = tg.get_chats()
     result.wait()
+
     result = tg.send_message(
         chat_id=args.chat_id,
         text=args.text,
     )
     # `tdlib` is asynchronous, so `python-telegram` always returns you an `AsyncResult` object.
-    # You can wait for a result with `wait` method.
+    # You can receive a result with the `wait` method of this object.
     result.wait()
+    print(result.update)
 ```
 
-More examples you can find in `/examples/`.
+More examples you can find in the [/examples/ directory](/examples/).
 
 ### Docker
 
-Try to use docker if you don't want to build tdlib:
+This library has [docker image](https://hub.docker.com/r/akhmetov/python-telegram/):
 
 ```sh
-API_ID=your_id API_HASH=your_hash PHONE=+123 CHAT_ID=chat_id TEXT='Hello world' make docker-send-message
+docker run -i -t --rm \
+            -v /tmp/docker-python-telegram/:/tmp/ \
+            akhmetov/python-telegram \
+            python3 /app/examples/send_message.py $(API_ID) $(API_HASH) $(PHONE) $(CHAT_ID) $(TEXT)
 ```
 
-It will start pre-built docker container with `tdlib` and `python-telegram` inside.
+----
+
+More information in the [documentation](http://python-telegram.readthedocs.io).

@@ -1,3 +1,4 @@
+import os
 import time
 import queue
 import signal
@@ -7,6 +8,7 @@ import logging
 import threading
 from typing import Dict, List, Callable, Any, Optional, Type
 
+from telegram import VERSION
 from telegram.utils import AsyncResult
 from telegram.tdjson import TDJson
 from telegram.worker import BaseWorker, SimpleWorker
@@ -19,9 +21,17 @@ class Telegram(object):
                  api_id: int,
                  api_hash: str,
                  phone: str,
+                 database_encryption_key: str,
                  library_path: str = None,
                  worker: Optional[Type[BaseWorker]] = None,
-                 database_encryption_key: str = None) -> None:
+                 files_directory: str = None,
+                 use_test_dc: bool = False,
+                 use_message_database: bool = True,
+                 device_model: str = 'python-telegram',
+                 application_version: str = VERSION,
+                 system_version: str = 'unknown',
+                 system_language_code: str = 'en',
+                 login: bool = False) -> None:
         """
         Args:
             api_id - ID of your app (https://my.telegram.org/apps/)
@@ -29,12 +39,31 @@ class Telegram(object):
             phone - your phone number
             library_path - you can change path to the compiled libtdjson library
             worker - worker to process updates
+            files_directory - directory for the tdlib's files (database, images, etc.)
+            use_test_dc - use test datacenter
+            use_message_database
+            device_model
+            application_version
+            system_version
+            system_language_code
         """
         self.api_id = api_id
         self.api_hash = api_hash
         self.library_path = library_path
         self.phone = phone
-        self._database_encryption_key = database_encryption_key or 'changeme1234'
+        self.use_test_dc = use_test_dc
+        self.device_model = device_model
+        self.system_version = system_version
+        self.system_language_code = system_language_code
+        self.application_version = application_version
+        self.use_message_database = use_message_database
+
+        self._database_encryption_key = database_encryption_key
+
+        if not files_directory:
+            files_directory = f'/tmp/.tdlib_files/{self.phone}/'
+        self.files_directory = files_directory
+
         self._authorized = False
         self._is_enabled = False
         self._queue: queue.Queue = queue.Queue()
@@ -48,8 +77,13 @@ class Telegram(object):
         self._message_handlers: List[Callable] = []
         self._update_handlers: List[Callable] = []
 
-        self._tdjson = TDJson(library_path=library_path)
+        self._tdjson = TDJson(
+            library_path=library_path,
+        )
         self._run()
+
+        if login:
+            self.login()
 
     def __del__(self):
         if hasattr(self, '_tdjson'):
@@ -57,7 +91,9 @@ class Telegram(object):
 
     def send_message(self, chat_id: int, text: str) -> AsyncResult:
         """
-        Sends a message to a chat
+        Sends a message to a chat. The chat must be in the tdlib's database.
+        If there is no chat in the DB, tdlib returns an error.
+        Chat is being saved to the database when the client receives a message or when you call the `get_chats` method.
 
         Args:
             chat_id
@@ -88,7 +124,10 @@ class Telegram(object):
         return self._send_data(data)
 
     def get_chat(self, chat_id: int) -> AsyncResult:
-        """This is offline request, if there is no chat in your database it will not be found"""
+        """
+        This is offline request, if there is no chat in your database it will not be found
+        tdlib saves chat to the database when it receives a new message or when you call `get_chats` method.
+        """
         data = {
             '@type': 'getChat',
             'chat_id': chat_id,
@@ -125,6 +164,16 @@ class Telegram(object):
                          from_message_id: int = 0,
                          offset: int = 0,
                          only_local: bool = False):
+        """
+        Returns history of a chat
+
+        Args:
+            chat_id
+            limit
+            from_message_id
+            offset
+            only_local
+        """
         data = {
             '@type': 'getChatHistory',
             'chat_id': chat_id,
@@ -137,7 +186,8 @@ class Telegram(object):
 
     def get_web_page_instant_view(self, url: str, force_full: bool = False):
         """
-        Use this method to request instant preview of a webpage
+        Use this method to request instant preview of a webpage.
+        Returns error with 404 if there is no preview for this webpage.
 
         Args:
             url: URL of a webpage
@@ -244,7 +294,11 @@ class Telegram(object):
         self._is_enabled = False
 
     def login(self):
-        """Login process (blocking)"""
+        """
+        Login process (blocking)
+
+        Must be called before any other call. It sends initial params to the tdlib, sets database encryption key, etc.
+        """
         authorization_state = None
         actions = {
             None: self._set_initial_params,
@@ -255,30 +309,31 @@ class Telegram(object):
             'authorizationStateWaitPassword': self._send_password,
             'authorizationStateReady': self._complete_authorization,
         }
+        logger.info('[login] Login process has been started')
 
         while not self._authorized:
-            logger.info(f'Current authorization state: {authorization_state}')
+            logger.info(f'[login] current authorization state: {authorization_state}')
             result = actions[authorization_state]()
             if result:
                 result.wait(raise_exc=True)
                 authorization_state = result.update['authorization_state']['@type']
 
     def _set_initial_params(self) -> AsyncResult:
-        logger.info('Setting tdlib initial params')
+        logger.info(f'Setting tdlib initial params: files_dir={self.files_directory} test_dc={self.use_test_dc}')
         data = {
             # todo: params
             '@type': 'setTdlibParameters',
             'parameters': {
-                'use_test_dc': False,
+                'use_test_dc': self.use_test_dc,
                 'api_id': self.api_id,
                 'api_hash': self.api_hash,
-                'device_model': 'pytd',
-                'system_version': 'Unknown',
-                'application_version': '0.0.1',
-                'system_language_code': 'en',
-                'database_directory': f'/tmp/.tdlib_files_{self.phone}/database/',
-                'use_message_database': True,
-                'files_directory': f'/tmp/.tdlib_files_{self.phone}/files',
+                'device_model': self.device_model,
+                'system_version': self.system_version,
+                'application_version': self.application_version,
+                'system_language_code': self.system_language_code,
+                'database_directory': os.path.join(self.files_directory, 'database'),
+                'use_message_database': self.use_message_database,
+                'files_directory': os.path.join(self.files_directory, 'files'),
             }
         }
         return self._send_data(data, result_id='updateAuthorizationState')

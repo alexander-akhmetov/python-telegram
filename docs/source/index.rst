@@ -1,13 +1,14 @@
 Welcome to python-telegram's documentation
 ===========================================
 
-|build-status| |docker-hub|
+|build-status| |docker-hub| |pypi|
 
 .. toctree::
    :maxdepth: 1
 
    tutorial
    telegram
+   tdlib
    changelog
 
 Client for the `tdlib <https://github.com/tdlib/td>`_ library (at very early stage :) ).
@@ -15,24 +16,31 @@ Client for the `tdlib <https://github.com/tdlib/td>`_ library (at very early sta
 Installation
 ------------
 
-To install just run
-
 .. code-block:: bash
 
      python3 -m pip install python-telegram
 
-To use `python-telegram` you need to:
+After you must `register <http://my.telegram.org/apps/>`_ a new Telegram application.
 
-1. `Register <http://my.telegram.org/apps/>`_ a new Telegram app
-2. Build `tdlib <https://github.com/tdlib/td>`_
-3. Install ``python-telegram``.
-
-The second step is the most difficult. You can read more about building tdlib `here <https://github.com/tdlib/td#building>`_.
-
-If you don't want to build it yourself, you can use pre-built docker image with `python-telegram <https://hub.docker.com/r/akhmetov/python-telegram/>`_ or `tdlib <https://hub.docker.com/r/akhmetov/tdlib/>`_.
+Now you can start using the library: :ref:`tutorial`.
 
 .. note::
-    You can find the examples in the `source code <https://github.com/alexander-akhmetov/python-telegram/tree/master/examples>`_.
+    You can find more examples `here <https://github.com/alexander-akhmetov/python-telegram/tree/master/examples>`_.
+
+This package contains pre-built ``tdlib`` library, so you don't need build it (Linux + MacOS).
+But if you want, you can find more information about building tdlib here: :ref:`tdlib`.
+
+Docker
+------
+
+This library has a `docker image <https://hub.docker.com/r/akhmetov/python-telegram/>`_
+
+.. code-block:: bash
+
+    docker run -i -t --rm \
+                -v /tmp/docker-python-telegram/:/tmp/ \
+                akhmetov/python-telegram \
+                python3 /app/examples/send_message.py $(API_ID) $(API_HASH) $(PHONE) $(CHAT_ID) $(TEXT)
 
 
 .. |build-status| image:: https://travis-ci.org/alexander-akhmetov/python-telegram.svg?branch=master
@@ -42,3 +50,8 @@ If you don't want to build it yourself, you can use pre-built docker image with 
 .. |docker-hub| image:: https://img.shields.io/docker/automated/akhmetov/python-telegram.svg
     :alt: Documentation Status
     :target: https://hub.docker.com/r/akhmetov/python-telegram/
+
+.. |pypi| image:: https://img.shields.io/pypi/v/python-telegram.svg
+    :alt: pypi package
+    :target: http://pypi.org/project/python-telegram/
+

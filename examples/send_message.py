@@ -6,6 +6,14 @@ from telegram.client import Telegram
 from utils import setup_logging
 
 
+"""
+Sends a message to a chat
+
+Usage:
+    python examples/send_message.py api_id api_hash phone chat_id text
+"""
+
+
 if __name__ == '__main__':
     setup_logging(level=logging.INFO)
 
@@ -21,6 +29,7 @@ if __name__ == '__main__':
         api_id=args.api_id,
         api_hash=args.api_hash,
         phone=args.phone,
+        database_encryption_key='changeme1234',
     )
     # you must call login method before others
     tg.login()

@@ -1,6 +1,5 @@
-FROM akhmetov/tdlib
+FROM python:3.6.5-alpine3.7
 
-RUN apk update && apk add python3
 RUN python3 -m ensurepip --upgrade
 RUN python3 -m pip install python-telegram
 

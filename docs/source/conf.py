@@ -15,6 +15,7 @@
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
+import sphinx_readable_theme
 
 
 # -- Project information -----------------------------------------------------
@@ -91,8 +92,11 @@ html_theme_options = {
     'github_type': 'star',
     'extra_nav_links': {
         'Main page': '/',
+        '1': '',
         'GitHub': 'https://github.com/alexander-akhmetov/python-telegram',
         'DockerHub': 'https://hub.docker.com/r/akhmetov/python-telegram/',
+        'PyPi': 'https://pypi.org/project/python-telegram/',
+        '2': '',
     }
 }
 

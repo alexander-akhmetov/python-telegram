@@ -5,4 +5,7 @@ include *.md
 include LICENSE.txt
 
 recursive-include telegram *.py
+recursive-include telegram/lib *
+recursive-include docs *
+
 global-exclude *.pyc

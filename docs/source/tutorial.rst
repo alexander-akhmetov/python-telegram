@@ -1,3 +1,5 @@
+.. _tutorial:
+
 ========
 Tutorial
 ========
@@ -5,25 +7,30 @@ Tutorial
 How to build a simple echo-bot with ``python-telegram``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Ok, now you have installed ``python-telegram`` and ``tdlib``. Let's create a simple echo-bot, which sends ``pong`` if receives ``ping``.
+.. code-block:: bash
 
-At first, import ``Telegram`` and initialize it with your credentials.
+     python3 -m pip install python-telegram
+
+Ok, now you have installed the library. Let's create a simple echo-bot, which sends "pong" if receives "ping".
+
+At first, initialize telegram client with your credentials:
 
 .. code-block:: python
 
     from telegram.client import Telegram
 
     tg = Telegram(
-        api_id=args.api_id,
-        api_hash=args.api_hash,
-        phone=args.phone,
+        api_id='api_id',
+        api_hash='api_hash',
+        phone='+31611111111',
+        database_encryption_key='changeme1234',
     )
 
 .. note::
-    ``tdlib`` stores login information and messages database on the filesystem.
-    This library is configured to save this information to the ``/tmp/.tdlib_files_{phone_number}/``.
+    The library (actually ``tdlib``) stores messages database and received files in the ``/tmp/.tdlib_files/{phone_number}/``.
+    You can change this behaviour with the ``files_directory`` parameter.
 
-When you have to login:
+After, you have to login:
 
 .. code-block:: python
 
@@ -75,9 +82,10 @@ The full code:
     from telegram.client import Telegram
 
     tg = Telegram(
-        api_id=args.api_id,
-        api_hash=args.api_hash,
-        phone=args.phone,
+        api_id='api_id',
+        api_hash='api_hash',
+        phone='+31611111111',
+        database_encryption_key='changeme1234',
     )
     tg.login()
 
@@ -97,4 +105,4 @@ The full code:
     tg.add_message_handler(new_message_handler)
     tg.idle()  # blocking waiting for CTRL+C
 
-Done! Now you have built your first and very simple client for the Telegram Messenger.
+Done! You have built your first and very simple client for the Telegram Messenger.

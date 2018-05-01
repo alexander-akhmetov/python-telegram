@@ -2,6 +2,26 @@
 Changelog
 =========
 
+[0.5.0] - 2018-05-01
+--------------------
+
+- New **required** parameter in the ``telegram.client.Telegram``: ``database_encryption_key``.
+
+- Compiled ``tdlib`` files now are in the pypi package (Linux and MacOS).
+
+- Default location of the tdlib's files changed to ``/tmp/.tdlib_files/{phone_number}``.
+
+- Now you can define additional optional params:
+
+    * use_test_dc (default False)
+    * device_model
+    * system_version
+    * system_language_code
+    * application_version
+    * use_message_database (default True)
+
+- Added new example: `chat_stats.py`.
+
 [0.4.0] - 2018-04-29
 --------------------
 

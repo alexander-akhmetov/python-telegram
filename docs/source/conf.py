@@ -89,9 +89,11 @@ html_theme_options = {
     'github_repo': 'python-telegram',
     'github_button': True,
     'github_type': 'star',
-    'extra_nav_links': [
-        ('Main', '/'),
-    ]
+    'extra_nav_links': {
+        'Main page': '/',
+        'GitHub': 'https://github.com/alexander-akhmetov/python-telegram',
+        'DockerHub': 'https://hub.docker.com/r/akhmetov/python-telegram/',
+    }
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

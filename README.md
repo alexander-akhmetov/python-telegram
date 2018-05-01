@@ -3,11 +3,13 @@
 [![Build Status](https://travis-ci.org/alexander-akhmetov/python-telegram.svg?branch=master)](https://travis-ci.org/alexander-akhmetov/python-telegram)
 [![PyPI](https://img.shields.io/pypi/v/python-telegram.svg)](https://pypi.python.org/pypi/python-telegram)
 [![DockerHub](https://img.shields.io/docker/automated/akhmetov/python-telegram.svg)](https://hub.docker.com/r/akhmetov/python-telegram/)
+![Read the Docs (version)](https://img.shields.io/readthedocs/pip/stable.svg)
 
 Client for the [tdlib](https://github.com/tdlib/td) library (very early stage :) ).
 It can receive messages, process them and send some text back for now.
 
-[Changelog](CHANGELOG.md)
+[Changelog](docs/source/changelog.rst)
+[Documentation](http://python-telegram.readthedocs.io)
 
 ## Installation
 

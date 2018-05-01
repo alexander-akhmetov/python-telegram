@@ -4,10 +4,11 @@ Welcome to python-telegram's documentation
 |build-status| |docker-hub|
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    tutorial
    telegram
+   changelog
 
 Client for the `tdlib <https://github.com/tdlib/td>`_ library (at very early stage :) ).
 

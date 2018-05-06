@@ -10,14 +10,14 @@ from ctypes import (
     c_void_p,
     c_longlong,
 )
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import pkg_resources
 
 logger = logging.getLogger(__name__)
 
 
-def _get_tdjson_lib_path():
+def _get_tdjson_lib_path() -> str:
     if platform.system().lower() == 'darwin':
         lib_name = 'darwin/libtdjson.dylib'
     else:
@@ -29,7 +29,7 @@ def _get_tdjson_lib_path():
 
 
 class TDJson(object):
-    def __init__(self, library_path: str = None) -> None:
+    def __init__(self, library_path: Optional[str] = None) -> None:
         if library_path is None:
             library_path = _get_tdjson_lib_path()
         logger.info(f'Using shared library "{library_path}"')

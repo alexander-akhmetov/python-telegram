@@ -92,6 +92,18 @@ class TestTelegram(object):
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
 
+    def test_get_me(self, telegram):
+        async_result = telegram.get_me()
+
+        exp_data = {
+            '@type': 'getMe',
+            '@extra': {
+                'request_id': async_result.id,
+            },
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
     def test_get_chat(self, telegram):
         chat_id = 1
 

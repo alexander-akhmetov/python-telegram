@@ -2,6 +2,18 @@
 Changelog
 =========
 
+[unreleased]
+
+- New method ``getMe`` with an example.
+
+[0.6.1] - 2018-05-01
+
+- Fixes for the Linux pre-compiled tdlib library.
+
+[0.6.0] - 2018-05-01
+
+- Fixes for the Linux pre-compiled tdlib library.
+
 [0.5.0] - 2018-05-01
 --------------------
 

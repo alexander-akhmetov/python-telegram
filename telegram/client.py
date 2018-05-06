@@ -134,6 +134,14 @@ class Telegram(object):
         }
         return self._send_data(data)
 
+    def get_me(self) -> AsyncResult:
+        """
+        Requests information of the current user (getMe method)
+
+        https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1get_me.html
+        """
+        return self.call_method('getMe')
+
     def get_chats(self,
                   offset_order: int = 0,
                   offset_chat_id: int = 0,
@@ -200,7 +208,7 @@ class Telegram(object):
         }
         return self._send_data(data)
 
-    def call_method(self, method_name: str, params: Dict[str, Any]):
+    def call_method(self, method_name: str, params: Optional[Dict[str, Any]] = None):
         """
         Use this method to call any other method of the tdlib
 
@@ -211,7 +219,8 @@ class Telegram(object):
         data = {
             '@type': method_name,
         }
-        data.update(params)
+        if params:
+            data.update(params)
         return self._send_data(data)
 
     def _run(self):

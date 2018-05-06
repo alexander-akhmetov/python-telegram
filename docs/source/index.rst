@@ -16,7 +16,28 @@ Client for the `tdlib <https://github.com/tdlib/td>`_ library (at very early sta
 Installation
 ------------
 
-This library works with python-3.6 only.
+At first you must install dependencies.
+
+MacOS
+~~~~~
+
+.. code-block:: bash
+
+   brew install zlib openssl
+
+Linux
+~~~~~
+
+Install dependencies using your package manager. For example in Ubuntu:
+
+.. code-block:: bash
+
+   sudo apt-get install openssl zlib1g
+
+Library installation
+~~~~~~~~~~~~~~~~~~~~
+
+This library works with Python 3.6+ only.
 
 .. code-block:: bash
 
@@ -56,4 +77,3 @@ This library has a `docker image <https://hub.docker.com/r/akhmetov/python-teleg
 .. |pypi| image:: https://img.shields.io/pypi/v/python-telegram.svg
     :alt: pypi package
     :target: http://pypi.org/project/python-telegram/
-

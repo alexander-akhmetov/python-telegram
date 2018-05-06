@@ -1,11 +1,11 @@
-# [WIP] Python Telegram client
+# python-telegram
 
 [![Build Status](https://travis-ci.org/alexander-akhmetov/python-telegram.svg?branch=master)](https://travis-ci.org/alexander-akhmetov/python-telegram)
 [![PyPI](https://img.shields.io/pypi/v/python-telegram.svg)](https://pypi.python.org/pypi/python-telegram)
 [![DockerHub](https://img.shields.io/docker/automated/akhmetov/python-telegram.svg)](https://hub.docker.com/r/akhmetov/python-telegram/)
 ![Read the Docs (version)](https://img.shields.io/readthedocs/pip/stable.svg)
 
-Client for the [tdlib](https://github.com/tdlib/td) library (very early stage :) ).
+Python API for the [tdlib](https://github.com/tdlib/td) library.
 If helps you build your own Telegram clients.
 
 * [Changelog](docs/source/changelog.rst)
@@ -14,19 +14,22 @@ If helps you build your own Telegram clients.
 
 ## Installation
 
-This library works with python-3.6 only.
-Install with pip:
+This library works with Python 3.6+ only.
+
+See [documentation](http://python-telegram.readthedocs.io/en/latest/#installation) to install
+
+### Docker
+
+This library has [docker image](https://hub.docker.com/r/akhmetov/python-telegram/):
 
 ```sh
-pip install python-telegram
+docker run -i -t --rm \
+            -v /tmp/docker-python-telegram/:/tmp/ \
+            akhmetov/python-telegram \
+            python3 /app/examples/send_message.py $(API_ID) $(API_HASH) $(PHONE) $(CHAT_ID) $(TEXT)
 ```
 
 ## How to use
-
-This package already contains [pre-built tdlib](https://github.com/tdlib/td#building).
-And you must register a new [telegram app](http://my.telegram.org/apps/) to get `API_ID` and `API_HASH`.
-
-### How to use this library
 
 Check the [tutorial](http://python-telegram.readthedocs.io/en/latest/tutorial.html) :)
 
@@ -59,17 +62,6 @@ Basic example:
 ```
 
 More examples you can find in the [/examples/ directory](/examples/).
-
-### Docker
-
-This library has [docker image](https://hub.docker.com/r/akhmetov/python-telegram/):
-
-```sh
-docker run -i -t --rm \
-            -v /tmp/docker-python-telegram/:/tmp/ \
-            akhmetov/python-telegram \
-            python3 /app/examples/send_message.py $(API_ID) $(API_HASH) $(PHONE) $(CHAT_ID) $(TEXT)
-```
 
 ----
 

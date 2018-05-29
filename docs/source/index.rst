@@ -16,23 +16,19 @@ Client for the `tdlib <https://github.com/tdlib/td>`_ library (at very early sta
 Installation
 ------------
 
-At first you must install dependencies.
+At first you must install ``tdlib``.
 
-MacOS
-~~~~~
+How to build tdlib
+~~~~~~~~~~~~~~~~~~
 
-.. code-block:: bash
+`Official documentation <https://github.com/tdlib/td#building>`_
 
-   brew install zlib openssl
-
-Linux
-~~~~~
-
-Install dependencies using your package manager. For example in Ubuntu:
+Do not forget install the library after:
 
 .. code-block:: bash
 
-   sudo apt-get install openssl zlib1g
+    make install
+
 
 Library installation
 ~~~~~~~~~~~~~~~~~~~~
@@ -49,9 +45,6 @@ Now you can start using the library: :ref:`tutorial`.
 
 .. note::
     You can find more examples `here <https://github.com/alexander-akhmetov/python-telegram/tree/master/examples>`_.
-
-This package contains pre-built ``tdlib`` library, so you don't need build it (Linux + MacOS).
-But if you want, you can find more information about building tdlib here: :ref:`tdlib`.
 
 Docker
 ------

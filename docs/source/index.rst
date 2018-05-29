@@ -23,7 +23,7 @@ How to build tdlib
 
 `Official documentation <https://github.com/tdlib/td#building>`_
 
-Do not forget install the library after:
+Do not forget install it after:
 
 .. code-block:: bash
 

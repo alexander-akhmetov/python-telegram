@@ -1,4 +1,4 @@
-FROM python:3.6.5-alpine3.7
+FROM python:3.7.1-alpine3.8
 
 RUN python3 -m ensurepip --upgrade
 RUN python3 -m pip install python-telegram

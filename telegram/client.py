@@ -31,7 +31,8 @@ class Telegram(object):
                  application_version: str = VERSION,
                  system_version: str = 'unknown',
                  system_language_code: str = 'en',
-                 login: bool = False) -> None:
+                 login: bool = False,
+                 default_workers_queue_size=1000) -> None:
         """
         Args:
             api_id - ID of your app (https://my.telegram.org/apps/)
@@ -57,6 +58,7 @@ class Telegram(object):
         self.system_language_code = system_language_code
         self.application_version = application_version
         self.use_message_database = use_message_database
+        self._queue_put_timeout = 10
 
         self._database_encryption_key = database_encryption_key
 
@@ -66,9 +68,11 @@ class Telegram(object):
 
         self._authorized = False
         self._is_enabled = False
-        self._queue: queue.Queue = queue.Queue()
 
-        self._workers_queue: queue.Queue = queue.Queue()
+        # todo: move to worker
+        self._workers_queue: queue.Queue = queue.Queue(
+            maxsize=default_workers_queue_size,
+        )
         if not worker:
             worker = SimpleWorker
         self.worker = worker(queue=self._workers_queue)
@@ -86,6 +90,11 @@ class Telegram(object):
             self.login()
 
     def __del__(self):
+        self.stop()
+
+    def stop(self) -> None:
+        """Stops the client"""
+        self._is_enabled = False
         if hasattr(self, '_tdjson'):
             self._tdjson.stop()
 
@@ -237,7 +246,6 @@ class Telegram(object):
         while self._is_enabled:
             update = self._tdjson.receive()
             if update:
-                self._queue.put(update)
                 self._update_async_result(update)
                 self._run_handlers(update)
 
@@ -259,13 +267,17 @@ class Telegram(object):
             logger.debug(f'async_result has not been found in by request_id={request_id}')
         else:
             async_result._parse_update(update)
+            self._results.pop(request_id, None)
 
         return async_result
 
     def _run_handlers(self, update: Dict[Any, Any]) -> None:
         if update.get('@type') == 'updateNewMessage':
             for handler in self._message_handlers:
-                self._workers_queue.put((handler, update))
+                self._workers_queue.put(
+                    (handler, update),
+                    timeout=self._queue_put_timeout,
+                )
 
     def add_message_handler(self, func: Callable) -> None:
         if func not in self._message_handlers:
@@ -297,7 +309,7 @@ class Telegram(object):
         self._is_enabled = True
 
         while self._is_enabled:
-            time.sleep(1)
+            time.sleep(0.1)
 
     def _signal_handler(self, signum, frame):
         self._is_enabled = False

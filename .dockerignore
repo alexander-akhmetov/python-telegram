@@ -1,0 +1,8 @@
+dist
+build
+.tdlib_files
+.tdlib_files*
+telegram/lib
+.tox
+.mypy_cache
+MANIFEST

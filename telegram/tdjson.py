@@ -36,7 +36,11 @@ class TDJson(object):
 
         self._build_client(library_path)
 
-    def _build_client(self, library_path: str):
+    def __del__(self):
+        if hasattr(self, '_tdjson') and hasattr(self._tdjson, '_td_json_client_destroy'):
+            self.stop()
+
+    def _build_client(self, library_path: str) -> None:
         self._tdjson = CDLL(library_path)
 
         # load TDLib functions from shared library
@@ -83,7 +87,7 @@ class TDJson(object):
         self._td_set_log_fatal_error_callback.argtypes = [fatal_error_callback_type]
 
         # initialize TDLib log with desired parameters
-        def on_fatal_error_callback(error_message):
+        def on_fatal_error_callback(error_message: str) -> None:
             logger.error('TDLib fatal error: ', error_message)
 
         c_on_fatal_error_callback = fatal_error_callback_type(on_fatal_error_callback)

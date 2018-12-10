@@ -1,5 +1,9 @@
 import uuid
 import time
+from typing import TYPE_CHECKING, Optional, Any, Dict
+
+if TYPE_CHECKING:
+    from telegram.client import Telegram  # noqa
 
 
 class AsyncResult(object):
@@ -7,7 +11,7 @@ class AsyncResult(object):
     tdlib is asynchronous, and this class helps you get results back.
     After each API call, you receive AsyncResult object, which you can use to get results back.
     """
-    def __init__(self, client, result_id=None):
+    def __init__(self, client: 'Telegram', result_id=None) -> None:
         self.client = client
 
         if result_id:
@@ -15,11 +19,11 @@ class AsyncResult(object):
         else:
             self.id = uuid.uuid4().hex
 
-        self.request = None
+        self.request: Optional[Dict[Any, Any]] = None
         self.ok_received = False
         self.error = False
-        self.error_info = None
-        self.update = None
+        self.error_info: Optional[Dict[Any, Any]] = None
+        self.update: Optional[Dict[Any, Any]] = None
 
     def __str__(self):
         return f'AsyncResult <{self.id}>'

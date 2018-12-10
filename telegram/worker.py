@@ -29,6 +29,7 @@ class SimpleWorker(BaseWorker):
 
     def _run_thread(self) -> None:
         logger.info('[SimpleWorker] started')
+
         while self._is_enabled:
             handler, update = self._queue.get()
             handler(update)

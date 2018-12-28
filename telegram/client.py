@@ -6,7 +6,7 @@ import typing
 import getpass
 import logging
 import threading
-from typing import Dict, List, Callable, Any, Optional, Type
+from typing import Any, Dict, List, Type, Callable, Optional
 
 from telegram import VERSION
 from telegram.utils import AsyncResult
@@ -16,23 +16,25 @@ from telegram.worker import BaseWorker, SimpleWorker
 logger = logging.getLogger(__name__)
 
 
-class Telegram(object):
-    def __init__(self,
-                 api_id: int,
-                 api_hash: str,
-                 phone: str,
-                 database_encryption_key: str,
-                 library_path: str = None,
-                 worker: Optional[Type[BaseWorker]] = None,
-                 files_directory: str = None,
-                 use_test_dc: bool = False,
-                 use_message_database: bool = True,
-                 device_model: str = 'python-telegram',
-                 application_version: str = VERSION,
-                 system_version: str = 'unknown',
-                 system_language_code: str = 'en',
-                 login: bool = False,
-                 default_workers_queue_size=1000) -> None:
+class Telegram:
+    def __init__(
+            self,
+            api_id: int,
+            api_hash: str,
+            phone: str,
+            database_encryption_key: str,
+            library_path: str = None,
+            worker: Optional[Type[BaseWorker]] = None,
+            files_directory: str = None,
+            use_test_dc: bool = False,
+            use_message_database: bool = True,
+            device_model: str = 'python-telegram',
+            application_version: str = VERSION,
+            system_version: str = 'unknown',
+            system_language_code: str = 'en',
+            login: bool = False,
+            default_workers_queue_size=1000
+    ) -> None:
         """
         Args:
             api_id - ID of your app (https://my.telegram.org/apps/)
@@ -70,9 +72,8 @@ class Telegram(object):
         self._is_enabled = False
 
         # todo: move to worker
-        self._workers_queue: queue.Queue = queue.Queue(
-            maxsize=default_workers_queue_size,
-        )
+        self._workers_queue: queue.Queue = queue.Queue(maxsize=default_workers_queue_size)
+
         if not worker:
             worker = SimpleWorker
         self.worker = worker(queue=self._workers_queue)
@@ -81,9 +82,7 @@ class Telegram(object):
         self._message_handlers: List[Callable] = []
         self._update_handlers: List[Callable] = []
 
-        self._tdjson = TDJson(
-            library_path=library_path,
-        )
+        self._tdjson = TDJson(library_path=library_path)
         self._run()
 
         if login:
@@ -95,6 +94,7 @@ class Telegram(object):
     def stop(self) -> None:
         """Stops the client"""
         self._is_enabled = False
+
         if hasattr(self, '_tdjson'):
             self._tdjson.stop()
 
@@ -130,6 +130,7 @@ class Telegram(object):
                 },
             },
         }
+
         return self._send_data(data)
 
     def get_chat(self, chat_id: int) -> AsyncResult:
@@ -141,6 +142,7 @@ class Telegram(object):
             '@type': 'getChat',
             'chat_id': chat_id,
         }
+
         return self._send_data(data)
 
     def get_me(self) -> AsyncResult:
@@ -149,12 +151,12 @@ class Telegram(object):
 
         https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1get_me.html
         """
+
         return self.call_method('getMe')
 
-    def get_chats(self,
-                  offset_order: int = 0,
-                  offset_chat_id: int = 0,
-                  limit: int = 100) -> AsyncResult:
+    def get_chats(
+            self, offset_order: int = 0, offset_chat_id: int = 0, limit: int = 100
+    ) -> AsyncResult:
         """
         Returns a list of chats:
 
@@ -173,14 +175,17 @@ class Telegram(object):
             'offset_chat_id': offset_chat_id,
             'limit': limit,
         }
+
         return self._send_data(data)
 
-    def get_chat_history(self,
-                         chat_id: int,
-                         limit: int = 1000,
-                         from_message_id: int = 0,
-                         offset: int = 0,
-                         only_local: bool = False):
+    def get_chat_history(
+            self,
+            chat_id: int,
+            limit: int = 1000,
+            from_message_id: int = 0,
+            offset: int = 0,
+            only_local: bool = False
+    ):
         """
         Returns history of a chat
 
@@ -199,6 +204,7 @@ class Telegram(object):
             'offset': offset,
             'only_local': only_local,
         }
+
         return self._send_data(data)
 
     def get_web_page_instant_view(self, url: str, force_full: bool = False):
@@ -215,6 +221,7 @@ class Telegram(object):
             'url': url,
             'force_full': force_full,
         }
+
         return self._send_data(data)
 
     def call_method(self, method_name: str, params: Optional[Dict[str, Any]] = None):
@@ -228,8 +235,10 @@ class Telegram(object):
         data = {
             '@type': method_name,
         }
+
         if params:
             data.update(params)
+
         return self._send_data(data)
 
     def _run(self):
@@ -243,8 +252,10 @@ class Telegram(object):
 
     def _listen_to_td(self):
         logger.info('[Telegram.td_listener] started')
+
         while self._is_enabled:
             update = self._tdjson.receive()
+
             if update:
                 self._update_async_result(update)
                 self._run_handlers(update)
@@ -252,7 +263,10 @@ class Telegram(object):
     def _update_async_result(self, update: dict) -> typing.Optional[AsyncResult]:
         async_result = None
 
-        _special_types = ('updateAuthorizationState', )  # for authorizationProcess @extra.request_id doesn't work
+        _special_types = (
+            'updateAuthorizationState',
+        )    # for authorizationProcess @extra.request_id doesn't work
+
         if update.get('@type') in _special_types:
             request_id = update['@type']
         else:
@@ -264,9 +278,9 @@ class Telegram(object):
             async_result = self._results.get(request_id)
 
         if not async_result:
-            logger.debug(f'async_result has not been found in by request_id={request_id}')
+            logger.debug('async_result has not been found in by request_id=%s', request_id)
         else:
-            async_result._parse_update(update)
+            async_result.parse_update(update)
             self._results.pop(request_id, None)
 
         return async_result
@@ -299,10 +313,12 @@ class Telegram(object):
         self._tdjson.send(data)
         self._results[async_result.id] = async_result
         async_result.request = data
+
         return async_result
 
     def idle(self, stop_signals=(signal.SIGINT, signal.SIGTERM, signal.SIGABRT)):
         """Blocks until one of the signals are received and stops"""
+
         for sig in stop_signals:
             signal.signal(sig, self._signal_handler)
 
@@ -333,14 +349,18 @@ class Telegram(object):
         logger.info('[login] Login process has been started')
 
         while not self._authorized:
-            logger.info(f'[login] current authorization state: {authorization_state}')
+            logger.info('[login] current authorization state: %s', authorization_state)
             result = actions[authorization_state]()
+
             if result:
                 result.wait(raise_exc=True)
                 authorization_state = result.update['authorization_state']['@type']
 
     def _set_initial_params(self) -> AsyncResult:
-        logger.info(f'Setting tdlib initial params: files_dir={self.files_directory} test_dc={self.use_test_dc}')
+        logger.info(
+            'Setting tdlib initial params: files_dir=%s, test_dc=%s', self.files_directory,
+            self.use_test_dc
+        )
         data = {
             # todo: params
             '@type': 'setTdlibParameters',
@@ -357,6 +377,7 @@ class Telegram(object):
                 'files_directory': os.path.join(self.files_directory, 'files'),
             }
         }
+
         return self._send_data(data, result_id='updateAuthorizationState')
 
     def _send_encryption_key(self) -> AsyncResult:
@@ -365,6 +386,7 @@ class Telegram(object):
             '@type': 'checkDatabaseEncryptionKey',
             'encryption_key': self._database_encryption_key,
         }
+
         return self._send_data(data, result_id='updateAuthorizationState')
 
     def _send_phone_number(self) -> AsyncResult:
@@ -375,6 +397,7 @@ class Telegram(object):
             'allow_flash_call': False,
             'is_current_phone_number': True,
         }
+
         return self._send_data(data, result_id='updateAuthorizationState')
 
     def _send_telegram_code(self) -> AsyncResult:
@@ -384,6 +407,7 @@ class Telegram(object):
             '@type': 'checkAuthenticationCode',
             'code': str(code),
         }
+
         return self._send_data(data, result_id='updateAuthorizationState')
 
     def _send_password(self) -> AsyncResult:
@@ -393,6 +417,7 @@ class Telegram(object):
             '@type': 'checkAuthenticationPassword',
             'password': password,
         }
+
         return self._send_data(data, result_id='updateAuthorizationState')
 
     def _complete_authorization(self) -> None:

@@ -4,7 +4,6 @@ from telegram import VERSION
 from telegram.utils import AsyncResult
 from telegram.client import Telegram
 
-
 API_ID = 1
 API_HASH = 'hash'
 PHONE = '+71234567890'

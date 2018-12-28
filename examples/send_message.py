@@ -1,10 +1,8 @@
 import logging
 import argparse
 
-from telegram.client import Telegram
-
 from utils import setup_logging
-
+from telegram.client import Telegram
 
 """
 Sends a message to a chat

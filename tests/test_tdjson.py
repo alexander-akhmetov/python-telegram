@@ -7,7 +7,8 @@ class Test_get_tdjson_lib_path(object):
         mocked_resource = mocker.Mock()
 
         with mocker.mock_module.patch('telegram.tdjson.platform.system', mocked_system):
-            with mocker.mock_module.patch('telegram.tdjson.pkg_resources.resource_filename', mocked_resource):
+            with mocker.mock_module.patch('telegram.tdjson.pkg_resources.resource_filename',
+                                          mocked_resource):
                 _get_tdjson_lib_path()
 
         mocked_resource.assert_called_once_with(
@@ -20,7 +21,8 @@ class Test_get_tdjson_lib_path(object):
         mocked_resource = mocker.Mock(return_value='/tmp/')
 
         with mocker.mock_module.patch('telegram.tdjson.platform.system', mocked_system):
-            with mocker.mock_module.patch('telegram.tdjson.pkg_resources.resource_filename', mocked_resource):
+            with mocker.mock_module.patch('telegram.tdjson.pkg_resources.resource_filename',
+                                          mocked_resource):
                 _get_tdjson_lib_path()
 
         mocked_resource.assert_called_once_with(
@@ -33,7 +35,8 @@ class Test_get_tdjson_lib_path(object):
         mocked_resource = mocker.Mock(return_value='/tmp/')
 
         with mocker.mock_module.patch('telegram.tdjson.platform.system', mocked_system):
-            with mocker.mock_module.patch('telegram.tdjson.pkg_resources.resource_filename', mocked_resource):
+            with mocker.mock_module.patch('telegram.tdjson.pkg_resources.resource_filename',
+                                          mocked_resource):
                 _get_tdjson_lib_path()
 
         mocked_resource.assert_called_once_with(
@@ -46,7 +49,8 @@ class Test_get_tdjson_lib_path(object):
         mocked_resource = mocker.Mock(return_value='/tmp/')
 
         with mocker.mock_module.patch('telegram.tdjson.platform.system', mocked_system):
-            with mocker.mock_module.patch('telegram.tdjson.pkg_resources.resource_filename', mocked_resource):
+            with mocker.mock_module.patch('telegram.tdjson.pkg_resources.resource_filename',
+                                          mocked_resource):
                 _get_tdjson_lib_path()
 
         mocked_resource.assert_called_once_with(

@@ -1,11 +1,10 @@
+import string
 import logging
 import argparse
-import string
 from collections import Counter
 
-from telegram.client import Telegram
-
 from utils import setup_logging
+from telegram.client import Telegram
 
 
 """

@@ -1,16 +1,17 @@
-import uuid
 import time
-from typing import TYPE_CHECKING, Optional, Any, Dict
+import uuid
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
-    from telegram.client import Telegram  # noqa
+    from telegram.client import Telegram    # noqa  pylint: disable=cyclic-import
 
 
-class AsyncResult(object):
+class AsyncResult:
     """
     tdlib is asynchronous, and this class helps you get results back.
     After each API call, you receive AsyncResult object, which you can use to get results back.
     """
+
     def __init__(self, client: 'Telegram', result_id=None) -> None:
         self.client = client
 
@@ -42,7 +43,7 @@ class AsyncResult(object):
             if timeout and time.time() - started_at > timeout:
                 raise TimeoutError()
 
-    def _parse_update(self, update: dict) -> None:
+    def parse_update(self, update: dict) -> None:
         if update.get('@type') == 'ok':
             self.ok_received = True
         elif update.get('@type') == 'error':

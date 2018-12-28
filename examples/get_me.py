@@ -2,7 +2,6 @@ import argparse
 
 from telegram.client import Telegram
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('api_id', help='API id')  # https://my.telegram.org/apps

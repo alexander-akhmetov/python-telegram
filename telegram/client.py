@@ -79,7 +79,7 @@ class Telegram(object):
 
         self._results: Dict[str, AsyncResult] = {}
         self._message_handlers: List[Callable] = []
-        self._update_handlers: List[Callable] = []
+        self._update_handlers: List[Callable] = {}
 
         self._tdjson = TDJson(
             library_path=library_path,
@@ -272,17 +272,23 @@ class Telegram(object):
         return async_result
 
     def _run_handlers(self, update: Dict[Any, Any]) -> None:
-        if update.get('@type') == 'updateNewMessage':
-            for handler in self._message_handlers:
+        for handler in self._update_handlers.get(update.get('@type'),[]):
                 self._workers_queue.put(
                     (handler, update),
                     timeout=self._queue_put_timeout,
                 )
-
+   
+    def add_update_handler(self, type,func: Callable):
+        try:
+            if func not in self._update_handlers[type]:
+                self._update_handlers[_type].append(func)
+        except KeyError:
+            self._update_handlers[type]=[]
+            self._update_handlers[type].append(func)
+            
     def add_message_handler(self, func: Callable) -> None:
-        if func not in self._message_handlers:
-            self._message_handlers.append(func)
-
+        self.add_update_handler('updateNewMessage',func);
+            
     def _send_data(self, data: dict, result_id: str = None) -> AsyncResult:
         if '@extra' not in data:
             data['@extra'] = {}

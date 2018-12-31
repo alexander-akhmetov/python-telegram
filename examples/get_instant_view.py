@@ -1,10 +1,8 @@
 import logging
 import argparse
 
-from telegram.client import Telegram
-
 from utils import setup_logging
-
+from telegram.client import Telegram
 
 """
 Prints short description of a webpage (using Telegram's instant view)

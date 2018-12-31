@@ -29,7 +29,7 @@ class TestAsyncResult(object):
         assert ar.error is False
         assert ar.error_info is None
 
-        ar._parse_update(update)
+        ar.parse_update(update)
 
         assert ar.error is True
         assert ar.error_info == update
@@ -43,7 +43,7 @@ class TestAsyncResult(object):
             'some': 'data',
         }
 
-        ar._parse_update(update)
+        ar.parse_update(update)
 
         assert ar.error is False
         assert ar.error_info is None
@@ -57,7 +57,7 @@ class TestAsyncResult(object):
             'some': 'data',
         }
 
-        ar._parse_update(update)
+        ar.parse_update(update)
 
         assert ar.error is False
         assert ar.error_info is None

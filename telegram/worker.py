@@ -1,18 +1,18 @@
-import queue
 import logging
 import threading
-
+from queue import Queue
 
 logger = logging.getLogger(__name__)
 
 
-class BaseWorker(object):
+class BaseWorker:
     """
     Base worker class.
     Each worker must implement the run method to start listening to the queue
     and calling handler functions
     """
-    def __init__(self, queue: queue.Queue) -> None:
+
+    def __init__(self, queue: Queue) -> None:
         self._is_enabled = True
         self._queue = queue
 
@@ -22,8 +22,9 @@ class BaseWorker(object):
 
 class SimpleWorker(BaseWorker):
     """Simple one-thread worker"""
+
     def run(self) -> None:
-        self._thread = threading.Thread(target=self._run_thread)
+        self._thread = threading.Thread(target=self._run_thread)    # pylint: disable=attribute-defined-outside-init
         self._thread.daemon = True
         self._thread.start()
 

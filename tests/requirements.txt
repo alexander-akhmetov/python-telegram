@@ -4,4 +4,4 @@ flake8
 pylint
 ipdb
 pytest-mock
-pytest-mypy
+mypy

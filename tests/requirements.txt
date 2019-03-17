@@ -1,5 +1,4 @@
 pytest
-isort
 flake8
 pylint
 ipdb

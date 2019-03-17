@@ -4,6 +4,10 @@ Changelog
 
 [unreleased]
 
+- ``telegram.client.Telegram`` now supports any update type with a new method ``add_update_handler(handler_type, func)``
+
+[0.7.0]
+
 - New method ``getMe`` with an example.
 
 [0.6.1] - 2018-05-01

@@ -25,8 +25,9 @@ class Telegram:
         self,
         api_id: int,
         api_hash: str,
-        phone: str,
         database_encryption_key: str,
+        phone: str = None,
+        bot_token: str = None,
         library_path: str = None,
         worker: Optional[Type[BaseWorker]] = None,
         files_directory: str = None,
@@ -38,6 +39,7 @@ class Telegram:
         system_language_code: str = 'en',
         login: bool = False,
         default_workers_queue_size=1000,
+        tdlib_verbosity: int = 2,
     ) -> None:
         """
         Args:
@@ -58,6 +60,7 @@ class Telegram:
         self.api_hash = api_hash
         self.library_path = library_path
         self.phone = phone
+        self.bot_token = bot_token
         self.use_test_dc = use_test_dc
         self.device_model = device_model
         self.system_version = system_version
@@ -65,6 +68,9 @@ class Telegram:
         self.application_version = application_version
         self.use_message_database = use_message_database
         self._queue_put_timeout = 10
+
+        if not self.bot_token and not self.phone:
+            raise ValueError('You must provide bot_token or phone')
 
         self._database_encryption_key = database_encryption_key
 
@@ -87,7 +93,7 @@ class Telegram:
         self._results: Dict[str, AsyncResult] = {}
         self._update_handlers: DefaultDict[str, List[Callable]] = defaultdict(list)
 
-        self._tdjson = TDJson(library_path=library_path)
+        self._tdjson = TDJson(library_path=library_path, verbosity=tdlib_verbosity)
         self._run()
 
         if login:
@@ -333,12 +339,15 @@ class Telegram:
             None: self._set_initial_params,
             'authorizationStateWaitTdlibParameters': self._set_initial_params,
             'authorizationStateWaitEncryptionKey': self._send_encryption_key,
-            'authorizationStateWaitPhoneNumber': self._send_phone_number,
+            'authorizationStateWaitPhoneNumber': self._send_phone_number_or_bot_token,
             'authorizationStateWaitCode': self._send_telegram_code,
             'authorizationStateWaitPassword': self._send_password,
             'authorizationStateReady': self._complete_authorization,
         }
-        logger.info('[login] Login process has been started')
+        if self.phone:
+            logger.info('[login] Login process has been started with phone')
+        else:
+            logger.info('[login] Login process has been started with bot token')
 
         while not self._authorized:
             logger.info('[login] current authorization state: %s', authorization_state)
@@ -382,6 +391,15 @@ class Telegram:
 
         return self._send_data(data, result_id='updateAuthorizationState')
 
+    def _send_phone_number_or_bot_token(self) -> AsyncResult:
+        """Sends phone number or a bot_token"""
+        if self.phone:
+            return self._send_phone_number()
+        elif self.bot_token:
+            return self._send_bot_token()
+        else:
+            raise RuntimeError('Unknown mode: both bot_token and phone are None')
+
     def _send_phone_number(self) -> AsyncResult:
         logger.info('Sending phone number')
         data = {
@@ -390,6 +408,12 @@ class Telegram:
             'allow_flash_call': False,
             'is_current_phone_number': True,
         }
+
+        return self._send_data(data, result_id='updateAuthorizationState')
+
+    def _send_bot_token(self) -> AsyncResult:
+        logger.info('Sending bot token')
+        data = {'@type': 'checkAuthenticationBotToken', 'token': self.bot_token}
 
         return self._send_data(data, result_id='updateAuthorizationState')
 

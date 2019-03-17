@@ -1,15 +1,7 @@
 import json
 import logging
 import platform
-from ctypes import (
-    CDLL,
-    CFUNCTYPE,
-    c_int,
-    c_char_p,
-    c_double,
-    c_void_p,
-    c_longlong,
-)
+from ctypes import CDLL, CFUNCTYPE, c_int, c_char_p, c_double, c_void_p, c_longlong
 from typing import Any, Dict, Optional
 
 import pkg_resources
@@ -23,25 +15,24 @@ def _get_tdjson_lib_path() -> str:
     else:
         lib_name = 'linux/libtdjson.so'
 
-    return pkg_resources.resource_filename(
-        'telegram',
-        f'lib/{lib_name}',
-    )
+    return pkg_resources.resource_filename('telegram', f'lib/{lib_name}')
 
 
 class TDJson:
-    def __init__(self, library_path: Optional[str] = None) -> None:
+    def __init__(self, library_path: Optional[str] = None, verbosity: int = 2) -> None:
         if library_path is None:
             library_path = _get_tdjson_lib_path()
         logger.info('Using shared library "%s"', library_path)
 
-        self._build_client(library_path)
+        self._build_client(library_path, verbosity)
 
     def __del__(self):
-        if hasattr(self, '_tdjson') and hasattr(self._tdjson, '_td_json_client_destroy'):
+        if hasattr(self, '_tdjson') and hasattr(
+            self._tdjson, '_td_json_client_destroy'
+        ):
             self.stop()
 
-    def _build_client(self, library_path: str) -> None:
+    def _build_client(self, library_path: str, verbosity: int) -> None:
         self._tdjson = CDLL(library_path)
 
         # load TDLib functions from shared library
@@ -79,11 +70,13 @@ class TDJson:
         self._td_set_log_verbosity_level.restype = None
         self._td_set_log_verbosity_level.argtypes = [c_int]
 
-        self._td_set_log_verbosity_level(2)
+        self._td_set_log_verbosity_level(verbosity)
 
         fatal_error_callback_type = CFUNCTYPE(None, c_char_p)
 
-        self._td_set_log_fatal_error_callback = self._tdjson.td_set_log_fatal_error_callback
+        self._td_set_log_fatal_error_callback = (
+            self._tdjson.td_set_log_fatal_error_callback
+        )
         self._td_set_log_fatal_error_callback.restype = None
         self._td_set_log_fatal_error_callback.argtypes = [fatal_error_callback_type]
 
@@ -118,4 +111,6 @@ class TDJson:
         return result
 
     def stop(self) -> None:
-        self._tdjson._td_json_client_destroy(self.td_json_client)    # pylint: disable=protected-access
+        self._tdjson._td_json_client_destroy(
+            self.td_json_client
+        )  # pylint: disable=protected-access

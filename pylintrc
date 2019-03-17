@@ -18,6 +18,7 @@ disable=print-statement,
         too-many-instance-attributes,
         too-many-arguments,
         C0111,
+	    C0330,
         W0511,
         too-few-public-methods,
         parameter-unpacking,
@@ -98,4 +99,3 @@ disable=print-statement,
         deprecated-sys-function,
         exception-escape,
         comprehension-escape
-

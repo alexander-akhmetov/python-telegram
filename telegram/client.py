@@ -6,7 +6,8 @@ import typing
 import getpass
 import logging
 import threading
-from typing import Any, Dict, List, Type, Callable, Optional
+from typing import Any, Dict, List, Type, Callable, Optional, DefaultDict
+from collections import defaultdict
 
 from telegram import VERSION
 from telegram.utils import AsyncResult
@@ -16,24 +17,27 @@ from telegram.worker import BaseWorker, SimpleWorker
 logger = logging.getLogger(__name__)
 
 
+MESSAGE_HANDLER_TYPE: str = 'updateNewMessage'
+
+
 class Telegram:
     def __init__(
-            self,
-            api_id: int,
-            api_hash: str,
-            phone: str,
-            database_encryption_key: str,
-            library_path: str = None,
-            worker: Optional[Type[BaseWorker]] = None,
-            files_directory: str = None,
-            use_test_dc: bool = False,
-            use_message_database: bool = True,
-            device_model: str = 'python-telegram',
-            application_version: str = VERSION,
-            system_version: str = 'unknown',
-            system_language_code: str = 'en',
-            login: bool = False,
-            default_workers_queue_size=1000
+        self,
+        api_id: int,
+        api_hash: str,
+        phone: str,
+        database_encryption_key: str,
+        library_path: str = None,
+        worker: Optional[Type[BaseWorker]] = None,
+        files_directory: str = None,
+        use_test_dc: bool = False,
+        use_message_database: bool = True,
+        device_model: str = 'python-telegram',
+        application_version: str = VERSION,
+        system_version: str = 'unknown',
+        system_language_code: str = 'en',
+        login: bool = False,
+        default_workers_queue_size=1000,
     ) -> None:
         """
         Args:
@@ -72,15 +76,16 @@ class Telegram:
         self._is_enabled = False
 
         # todo: move to worker
-        self._workers_queue: queue.Queue = queue.Queue(maxsize=default_workers_queue_size)
+        self._workers_queue: queue.Queue = queue.Queue(
+            maxsize=default_workers_queue_size
+        )
 
         if not worker:
             worker = SimpleWorker
         self.worker = worker(queue=self._workers_queue)
 
         self._results: Dict[str, AsyncResult] = {}
-        self._message_handlers: List[Callable] = []
-        self._update_handlers: List[Callable] = []
+        self._update_handlers: DefaultDict[str, List[Callable]] = defaultdict(list)
 
         self._tdjson = TDJson(library_path=library_path)
         self._run()
@@ -124,10 +129,7 @@ class Telegram:
             'chat_id': chat_id,
             'input_message_content': {
                 '@type': 'inputMessageText',
-                'text': {
-                    '@type': 'formattedText',
-                    'text': text,
-                },
+                'text': {'@type': 'formattedText', 'text': text},
             },
         }
 
@@ -138,10 +140,7 @@ class Telegram:
         This is offline request, if there is no chat in your database it will not be found
         tdlib saves chat to the database when it receives a new message or when you call `get_chats` method.
         """
-        data = {
-            '@type': 'getChat',
-            'chat_id': chat_id,
-        }
+        data = {'@type': 'getChat', 'chat_id': chat_id}
 
         return self._send_data(data)
 
@@ -155,7 +154,7 @@ class Telegram:
         return self.call_method('getMe')
 
     def get_chats(
-            self, offset_order: int = 0, offset_chat_id: int = 0, limit: int = 100
+        self, offset_order: int = 0, offset_chat_id: int = 0, limit: int = 100
     ) -> AsyncResult:
         """
         Returns a list of chats:
@@ -179,12 +178,12 @@ class Telegram:
         return self._send_data(data)
 
     def get_chat_history(
-            self,
-            chat_id: int,
-            limit: int = 1000,
-            from_message_id: int = 0,
-            offset: int = 0,
-            only_local: bool = False
+        self,
+        chat_id: int,
+        limit: int = 1000,
+        from_message_id: int = 0,
+        offset: int = 0,
+        only_local: bool = False,
     ):
         """
         Returns history of a chat
@@ -216,11 +215,7 @@ class Telegram:
             url: URL of a webpage
             force_full: If true, the full instant view for the web page will be returned
         """
-        data = {
-            '@type': 'getWebPageInstantView',
-            'url': url,
-            'force_full': force_full,
-        }
+        data = {'@type': 'getWebPageInstantView', 'url': url, 'force_full': force_full}
 
         return self._send_data(data)
 
@@ -232,9 +227,7 @@ class Telegram:
             method_name: Name of the method
             params: parameters
         """
-        data = {
-            '@type': method_name,
-        }
+        data = {'@type': method_name}
 
         if params:
             data.update(params)
@@ -265,7 +258,7 @@ class Telegram:
 
         _special_types = (
             'updateAuthorizationState',
-        )    # for authorizationProcess @extra.request_id doesn't work
+        )  # for authorizationProcess @extra.request_id doesn't work
 
         if update.get('@type') in _special_types:
             request_id = update['@type']
@@ -278,7 +271,9 @@ class Telegram:
             async_result = self._results.get(request_id)
 
         if not async_result:
-            logger.debug('async_result has not been found in by request_id=%s', request_id)
+            logger.debug(
+                'async_result has not been found in by request_id=%s', request_id
+            )
         else:
             async_result.parse_update(update)
             self._results.pop(request_id, None)
@@ -286,16 +281,16 @@ class Telegram:
         return async_result
 
     def _run_handlers(self, update: Dict[Any, Any]) -> None:
-        if update.get('@type') == 'updateNewMessage':
-            for handler in self._message_handlers:
-                self._workers_queue.put(
-                    (handler, update),
-                    timeout=self._queue_put_timeout,
-                )
+        update_type: str = update.get('@type', 'unknown')
+        for handler in self._update_handlers[update_type]:
+            self._workers_queue.put((handler, update), timeout=self._queue_put_timeout)
 
     def add_message_handler(self, func: Callable) -> None:
-        if func not in self._message_handlers:
-            self._message_handlers.append(func)
+        self.add_update_handler(MESSAGE_HANDLER_TYPE, func)
+
+    def add_update_handler(self, handler_type: str, func: Callable) -> None:
+        if func not in self._update_handlers[handler_type]:
+            self._update_handlers[handler_type].append(func)
 
     def _send_data(self, data: dict, result_id: str = None) -> AsyncResult:
         if '@extra' not in data:
@@ -304,10 +299,7 @@ class Telegram:
         if not result_id and 'request_id' in data['@extra']:
             result_id = data['@extra']['request_id']
 
-        async_result = AsyncResult(
-            client=self,
-            result_id=result_id,
-        )
+        async_result = AsyncResult(client=self, result_id=result_id)
         data['@extra']['request_id'] = async_result.id
 
         self._tdjson.send(data)
@@ -358,8 +350,9 @@ class Telegram:
 
     def _set_initial_params(self) -> AsyncResult:
         logger.info(
-            'Setting tdlib initial params: files_dir=%s, test_dc=%s', self.files_directory,
-            self.use_test_dc
+            'Setting tdlib initial params: files_dir=%s, test_dc=%s',
+            self.files_directory,
+            self.use_test_dc,
         )
         data = {
             # todo: params
@@ -375,7 +368,7 @@ class Telegram:
                 'database_directory': os.path.join(self.files_directory, 'database'),
                 'use_message_database': self.use_message_database,
                 'files_directory': os.path.join(self.files_directory, 'files'),
-            }
+            },
         }
 
         return self._send_data(data, result_id='updateAuthorizationState')
@@ -403,20 +396,14 @@ class Telegram:
     def _send_telegram_code(self) -> AsyncResult:
         logger.info('Sending code')
         code = input('Enter code:')
-        data = {
-            '@type': 'checkAuthenticationCode',
-            'code': str(code),
-        }
+        data = {'@type': 'checkAuthenticationCode', 'code': str(code)}
 
         return self._send_data(data, result_id='updateAuthorizationState')
 
     def _send_password(self) -> AsyncResult:
         logger.info('Sending password')
         password = getpass.getpass('Password:')
-        data = {
-            '@type': 'checkAuthenticationPassword',
-            'password': password,
-        }
+        data = {'@type': 'checkAuthenticationPassword', 'password': password}
 
         return self._send_data(data, result_id='updateAuthorizationState')
 

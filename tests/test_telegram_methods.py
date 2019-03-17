@@ -26,6 +26,16 @@ def telegram(mocker):
 
 
 class TestTelegram:
+    def test_phone_bot_token_init(self):
+        with pytest.raises(ValueError) as excinfo:
+            Telegram(
+                api_id=API_ID,
+                api_hash=API_HASH,
+                library_path=LIBRARY_PATH,
+                database_encryption_key=DATABASE_ENCRYPTION_KEY,
+            )
+            assert 'You must provide bot_token or phone' in str(excinfo.value)
+
     def test_send_message(self, telegram):
         chat_id = 1
         text = 'Hello world'
@@ -43,6 +53,37 @@ class TestTelegram:
         }
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
+
+    def test_send_phone_number_or_bot_token(self, telegram, mocker):
+        # check that the dunction calls _send_phone_number or _send_bot_token
+        with mocker.patch.object(telegram, '_send_phone_number'), mocker.patch.object(
+            telegram, '_send_bot_token'
+        ):
+
+            telegram.phone = '123'
+            telegram.bot_token = None
+
+            telegram._send_phone_number_or_bot_token()
+
+            telegram._send_phone_number.assert_called_once()
+            assert telegram._send_bot_token.call_count == 0
+
+            telegram.phone = None
+            telegram.bot_token = 'some-token'
+
+            telegram._send_phone_number_or_bot_token()
+            telegram._send_bot_token.assert_called_once()
+
+    def test_send_bot_token(self, telegram, mocker):
+        telegram.bot_token = 'some-token'
+
+        with mocker.patch.object(telegram, '_send_data'):
+            telegram._send_bot_token()
+
+            exp_data = {'@type': 'checkAuthenticationBotToken', 'token': 'some-token'}
+            telegram._send_data.assert_called_once_with(
+                exp_data, result_id='updateAuthorizationState'
+            )
 
     def test_add_message_handler(self, telegram):
         # check that add_message_handler
@@ -252,7 +293,7 @@ class TestTelegram__login:
 
         assert telegram._tdjson.send.call_count == 0
 
-    def test_login_process(self, telegram):
+    def test_login_process_with_phone(self, telegram):
         telegram._authorized = False
 
         def _get_ar(data):
@@ -271,7 +312,7 @@ class TestTelegram__login:
         telegram._send_encryption_key = lambda: _get_ar(
             data={'authorization_state': {'@type': 'authorizationStateWaitPhoneNumber'}}
         )
-        telegram._send_phone_number = lambda: _get_ar(
+        telegram._send_phone_number_or_bot_token = lambda: _get_ar(
             data={'authorization_state': {'@type': 'authorizationStateWaitCode'}}
         )
         telegram._send_telegram_code = lambda: _get_ar(

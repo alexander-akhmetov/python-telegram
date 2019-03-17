@@ -30,6 +30,9 @@ At first, initialize telegram client with your credentials:
     The library (actually ``tdlib``) stores messages database and received files in the ``/tmp/.tdlib_files/{phone_number}/``.
     You can change this behaviour with the ``files_directory`` parameter.
 
+.. note::
+    You can use bot token: just pass ``bot_token`` instead of ``phone``.
+
 After, you have to login:
 
 .. code-block:: python
@@ -70,7 +73,7 @@ Let's add more logic inside the message handler:
             chat_id = update['message']['chat_id']
             print(f'Ping has been received from {chat_id}')
             tg.send_message(
-                chat_id=chat_id,
+                chat_id=chat_id,  # str
                 text='pong',
             )
 

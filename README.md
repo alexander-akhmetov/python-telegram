@@ -41,7 +41,7 @@ Basic example:
     tg = Telegram(
         api_id='api_id',
         api_hash='api_hash',
-        phone='+31611111111',
+        phone='+31611111111',  # you can pass 'bot_token' instead
         database_encryption_key='changekey123',
     )
     tg.login()

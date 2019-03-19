@@ -12,10 +12,17 @@ logger = logging.getLogger(__name__)
 def _get_tdjson_lib_path() -> str:
     if platform.system().lower() == 'darwin':
         lib_name = 'darwin/libtdjson.dylib'
-    else:
+    elif platform.system().lower() == 'linux':
         lib_name = 'linux/libtdjson.so'
-
-    return pkg_resources.resource_filename('telegram', f'lib/{lib_name}')
+    else:
+        if platform.architecture()[0] == '64bit':
+            lib_name = 'windows/tdLib64/tdjson.dll'
+        else:
+            lib_name = 'windows/tdLib32/tdjson.dll'
+    return pkg_resources.resource_filename(
+        'tdlib',
+        f'lib/{lib_name}',
+    )
 
 
 class TDJson:

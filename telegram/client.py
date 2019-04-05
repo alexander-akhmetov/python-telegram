@@ -1,4 +1,5 @@
 import os
+import hashlib
 import time
 import queue
 import signal
@@ -75,7 +76,13 @@ class Telegram:
         self._database_encryption_key = database_encryption_key
 
         if not files_directory:
-            files_directory = f'/tmp/.tdlib_files/{self.phone}/'
+            hasher = hashlib.md5()
+            hasher.update(
+                (self.phone or self.bot_token).encode('utf-8')  # type: ignore
+            )
+            directory_name = hasher.hexdigest()
+            files_directory = f'/tmp/.tdlib_files/{directory_name}/'
+
         self.files_directory = files_directory
 
         self._authorized = False

@@ -4,6 +4,8 @@ Changelog
 
 [unreleased]
 
+- **Incompatible** default path for files is changed. Now the library uses an md5 hash of the phone number or bot token instead of just a phone number.
+  It should not be noticeable for most cases, but if you rely on locally saved files or database, you need to pass the ``files_directory`` parameter to the ``telegram.client.Telegram``.
 - Fixed problem with randomly raised "Database encryption key is needed" errors during login process. (#12)
 - Fixed `stop` method execution. (#8)
 - Added ``examples/bot_login.py`` example.

@@ -236,6 +236,7 @@ class TestTelegram:
 
     def test_set_initial_params(self, telegram):
         async_result = telegram._set_initial_params()
+        phone_md5 = '69560384b84c896952ef20352fbce705'
 
         exp_data = {
             '@type': 'setTdlibParameters',
@@ -247,9 +248,9 @@ class TestTelegram:
                 'system_version': 'unknown',
                 'application_version': VERSION,
                 'system_language_code': 'en',
-                'database_directory': f'/tmp/.tdlib_files/{PHONE}/database',
+                'database_directory': f'/tmp/.tdlib_files/{phone_md5}/database',
                 'use_message_database': True,
-                'files_directory': f'/tmp/.tdlib_files/{PHONE}/files',
+                'files_directory': f'/tmp/.tdlib_files/{phone_md5}/files',
             },
             '@extra': {'request_id': 'updateAuthorizationState'},
         }

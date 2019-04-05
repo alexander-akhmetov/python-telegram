@@ -3,7 +3,7 @@ import uuid
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
-    from telegram.client import Telegram    # noqa  pylint: disable=cyclic-import
+    from telegram.client import Telegram  # noqa  pylint: disable=cyclic-import
 
 
 class AsyncResult:

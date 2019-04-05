@@ -21,10 +21,7 @@ class TestAsyncResult(object):
 
     def test_parse_update_with_error(self):
         ar = AsyncResult(client=None)
-        update = {
-            '@type': 'error',
-            'some': 'data',
-        }
+        update = {'@type': 'error', 'some': 'data'}
 
         assert ar.error is False
         assert ar.error_info is None
@@ -38,10 +35,7 @@ class TestAsyncResult(object):
 
     def test_parse_update_ok(self):
         ar = AsyncResult(client=None)
-        update = {
-            '@type': 'ok',
-            'some': 'data',
-        }
+        update = {'@type': 'ok', 'some': 'data'}
 
         ar.parse_update(update)
 
@@ -52,10 +46,7 @@ class TestAsyncResult(object):
 
     def test_parse_update(self):
         ar = AsyncResult(client=None)
-        update = {
-            '@type': 'some_type',
-            'some': 'data',
-        }
+        update = {'@type': 'some_type', 'some': 'data'}
 
         ar.parse_update(update)
 

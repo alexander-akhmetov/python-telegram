@@ -1,4 +1,5 @@
 import os
+import hashlib
 import time
 import queue
 import signal
@@ -75,7 +76,13 @@ class Telegram:
         self._database_encryption_key = database_encryption_key
 
         if not files_directory:
-            files_directory = f'/tmp/.tdlib_files/{self.phone}/'
+            hasher = hashlib.md5()
+            hasher.update(
+                (self.phone or self.bot_token).encode('utf-8')  # type: ignore
+            )
+            directory_name = hasher.hexdigest()
+            files_directory = f'/tmp/.tdlib_files/{directory_name}/'
+
         self.files_directory = files_directory
 
         self._authorized = False
@@ -328,15 +335,22 @@ class Telegram:
     def _signal_handler(self, signum, frame):
         self._is_enabled = False
 
+    def get_authorization_state(self):
+        logger.debug('Getting authorization state')
+        data = {'@type': 'getAuthorizationState'}
+
+        return self._send_data(data, result_id='getAuthorizationState')
+
     def login(self):
         """
         Login process (blocking)
 
-        Must be called before any other call. It sends initial params to the tdlib, sets database encryption key, etc.
+        Must be called before any other call.
+        It sends initial params to the tdlib, sets database encryption key, etc.
         """
         authorization_state = None
         actions = {
-            None: self._set_initial_params,
+            None: self.get_authorization_state,
             'authorizationStateWaitTdlibParameters': self._set_initial_params,
             'authorizationStateWaitEncryptionKey': self._send_encryption_key,
             'authorizationStateWaitPhoneNumber': self._send_phone_number_or_bot_token,
@@ -355,7 +369,11 @@ class Telegram:
 
             if result:
                 result.wait(raise_exc=True)
-                authorization_state = result.update['authorization_state']['@type']
+
+                if result.id == 'getAuthorizationState':
+                    authorization_state = result.update['@type']
+                else:
+                    authorization_state = result.update['authorization_state']['@type']
 
     def _set_initial_params(self) -> AsyncResult:
         logger.info(

@@ -111,6 +111,4 @@ class TDJson:
         return result
 
     def stop(self) -> None:
-        self._tdjson._td_json_client_destroy(
-            self.td_json_client
-        )  # pylint: disable=protected-access
+        self._td_json_client_destroy(self.td_json_client)

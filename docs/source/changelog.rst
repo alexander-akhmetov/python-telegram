@@ -6,6 +6,7 @@ Changelog
 
 - Fixed problem with randomly raised "Database encryption key is needed" errors during login process. (#12)
 - Fixed `stop` method execution. (#8)
+- Added ``examples/bot_login.py`` example.
 
 [0.8.0] - 2019-03-17
 

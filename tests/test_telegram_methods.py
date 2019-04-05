@@ -296,29 +296,35 @@ class TestTelegram__login:
     def test_login_process_with_phone(self, telegram):
         telegram._authorized = False
 
-        def _get_ar(data):
-            ar = AsyncResult(client=telegram)
+        def _get_async_result(data, request_id=None):
+            result = AsyncResult(client=telegram)
 
-            ar.update = data
+            result.update = data
+            result.id = request_id
 
-            return ar
+            return result
 
         # login process chain
-        telegram._set_initial_params = lambda: _get_ar(
+        telegram.get_authorization_state = lambda: _get_async_result(
+            data={'@type': 'authorizationStateWaitEncryptionKey'},
+            request_id='getAuthorizationState',
+        )
+
+        telegram._set_initial_params = lambda: _get_async_result(
             data={
                 'authorization_state': {'@type': 'authorizationStateWaitEncryptionKey'}
             }
         )
-        telegram._send_encryption_key = lambda: _get_ar(
+        telegram._send_encryption_key = lambda: _get_async_result(
             data={'authorization_state': {'@type': 'authorizationStateWaitPhoneNumber'}}
         )
-        telegram._send_phone_number_or_bot_token = lambda: _get_ar(
+        telegram._send_phone_number_or_bot_token = lambda: _get_async_result(
             data={'authorization_state': {'@type': 'authorizationStateWaitCode'}}
         )
-        telegram._send_telegram_code = lambda: _get_ar(
+        telegram._send_telegram_code = lambda: _get_async_result(
             data={'authorization_state': {'@type': 'authorizationStateWaitPassword'}}
         )
-        telegram._send_password = lambda: _get_ar(
+        telegram._send_password = lambda: _get_async_result(
             data={'authorization_state': {'@type': 'authorizationStateReady'}}
         )
 

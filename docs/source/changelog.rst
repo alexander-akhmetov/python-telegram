@@ -2,6 +2,10 @@
 Changelog
 =========
 
+[unreleased]
+
+- Fixed problem with randomly raised "Database encryption key is needed" errors during login process.
+
 [0.8.0] - 2019-03-17
 
 - ``telegram.client.Telegram`` now supports any update type with a new method ``add_update_handler(handler_type, func)``

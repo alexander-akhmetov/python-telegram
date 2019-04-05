@@ -2,7 +2,7 @@
 Changelog
 =========
 
-[unreleased]
+[0.9.0] - 2019-04-05
 
 - **Incompatible** default path for files is changed. Now the library uses an md5 hash of the phone number or bot token instead of just a phone number.
   It should not be noticeable for most cases, but if you rely on locally saved files or database, you need to pass the ``files_directory`` parameter to the ``telegram.client.Telegram``.

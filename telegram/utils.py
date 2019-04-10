@@ -12,7 +12,7 @@ class AsyncResult:
     After each API call, you receive AsyncResult object, which you can use to get results back.
     """
 
-    def __init__(self, client: 'Telegram', result_id=None) -> None:
+    def __init__(self, client: 'Telegram', result_id: Optional[str] = None) -> None:
         self.client = client
 
         if result_id:
@@ -26,10 +26,10 @@ class AsyncResult:
         self.error_info: Optional[Dict[Any, Any]] = None
         self.update: Optional[Dict[Any, Any]] = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'AsyncResult <{self.id}>'
 
-    def wait(self, timeout: int = None, raise_exc: bool = False) -> None:
+    def wait(self, timeout: Optional[int] = None, raise_exc: bool = False) -> None:
         """
         Blocking method to wait for the result
         """
@@ -43,7 +43,7 @@ class AsyncResult:
             if timeout and time.time() - started_at > timeout:
                 raise TimeoutError()
 
-    def parse_update(self, update: dict) -> None:
+    def parse_update(self, update: Dict[Any, Any]) -> None:
         if update.get('@type') == 'ok':
             self.ok_received = True
         elif update.get('@type') == 'error':

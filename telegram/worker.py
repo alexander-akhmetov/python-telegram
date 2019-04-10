@@ -12,7 +12,7 @@ class BaseWorker:
     and calling handler functions
     """
 
-    def __init__(self, queue: Queue) -> None:
+    def __init__(self, queue: Queue):
         self._is_enabled = True
         self._queue = queue
 

@@ -7,7 +7,8 @@ import typing
 import getpass
 import logging
 import threading
-from typing import Any, Dict, List, Type, Callable, Optional, DefaultDict
+from typing import Any, Dict, List, Type, Callable, Optional, DefaultDict, Tuple
+from types import FrameType
 from collections import defaultdict
 
 from telegram import VERSION
@@ -27,11 +28,11 @@ class Telegram:
         api_id: int,
         api_hash: str,
         database_encryption_key: str,
-        phone: str = None,
-        bot_token: str = None,
-        library_path: str = None,
+        phone: Optional[str] = None,
+        bot_token: Optional[str] = None,
+        library_path: Optional[str] = None,
         worker: Optional[Type[BaseWorker]] = None,
-        files_directory: str = None,
+        files_directory: Optional[str] = None,
         use_test_dc: bool = False,
         use_message_database: bool = True,
         device_model: str = 'python-telegram',
@@ -39,7 +40,7 @@ class Telegram:
         system_version: str = 'unknown',
         system_language_code: str = 'en',
         login: bool = False,
-        default_workers_queue_size=1000,
+        default_workers_queue_size: int = 1000,
         tdlib_verbosity: int = 2,
     ) -> None:
         """
@@ -77,9 +78,8 @@ class Telegram:
 
         if not files_directory:
             hasher = hashlib.md5()
-            hasher.update(
-                (self.phone or self.bot_token).encode('utf-8')  # type: ignore
-            )
+            str_to_encode: str = self.phone or self.bot_token  # type: ignore
+            hasher.update(str_to_encode.encode('utf-8'))
             directory_name = hasher.hexdigest()
             files_directory = f'/tmp/.tdlib_files/{directory_name}/'
 
@@ -106,7 +106,7 @@ class Telegram:
         if login:
             self.login()
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.stop()
 
     def stop(self) -> None:
@@ -197,7 +197,7 @@ class Telegram:
         from_message_id: int = 0,
         offset: int = 0,
         only_local: bool = False,
-    ):
+    ) -> AsyncResult:
         """
         Returns history of a chat
 
@@ -219,7 +219,9 @@ class Telegram:
 
         return self._send_data(data)
 
-    def get_web_page_instant_view(self, url: str, force_full: bool = False):
+    def get_web_page_instant_view(
+        self, url: str, force_full: bool = False
+    ) -> AsyncResult:
         """
         Use this method to request instant preview of a webpage.
         Returns error with 404 if there is no preview for this webpage.
@@ -232,7 +234,9 @@ class Telegram:
 
         return self._send_data(data)
 
-    def call_method(self, method_name: str, params: Optional[Dict[str, Any]] = None):
+    def call_method(
+        self, method_name: str, params: Optional[Dict[str, Any]] = None
+    ) -> AsyncResult:
         """
         Use this method to call any other method of the tdlib
 
@@ -247,7 +251,7 @@ class Telegram:
 
         return self._send_data(data)
 
-    def _run(self):
+    def _run(self) -> None:
         self._is_enabled = True
 
         self._td_listener = threading.Thread(target=self._listen_to_td)
@@ -256,7 +260,7 @@ class Telegram:
 
         self.worker.run()
 
-    def _listen_to_td(self):
+    def _listen_to_td(self) -> None:
         logger.info('[Telegram.td_listener] started')
 
         while self._is_enabled:
@@ -266,7 +270,9 @@ class Telegram:
                 self._update_async_result(update)
                 self._run_handlers(update)
 
-    def _update_async_result(self, update: dict) -> typing.Optional[AsyncResult]:
+    def _update_async_result(
+        self, update: Dict[Any, Any]
+    ) -> typing.Optional[AsyncResult]:
         async_result = None
 
         _special_types = (
@@ -305,7 +311,9 @@ class Telegram:
         if func not in self._update_handlers[handler_type]:
             self._update_handlers[handler_type].append(func)
 
-    def _send_data(self, data: dict, result_id: str = None) -> AsyncResult:
+    def _send_data(
+        self, data: Dict[Any, Any], result_id: Optional[str] = None
+    ) -> AsyncResult:
         if '@extra' not in data:
             data['@extra'] = {}
 
@@ -321,7 +329,9 @@ class Telegram:
 
         return async_result
 
-    def idle(self, stop_signals=(signal.SIGINT, signal.SIGTERM, signal.SIGABRT)):
+    def idle(
+        self, stop_signals: Tuple = (signal.SIGINT, signal.SIGTERM, signal.SIGABRT)
+    ) -> None:
         """Blocks until one of the signals are received and stops"""
 
         for sig in stop_signals:
@@ -332,16 +342,16 @@ class Telegram:
         while self._is_enabled:
             time.sleep(0.1)
 
-    def _signal_handler(self, signum, frame):
+    def _signal_handler(self, signum: int, frame: FrameType) -> None:
         self._is_enabled = False
 
-    def get_authorization_state(self):
+    def get_authorization_state(self) -> AsyncResult:
         logger.debug('Getting authorization state')
         data = {'@type': 'getAuthorizationState'}
 
         return self._send_data(data, result_id='getAuthorizationState')
 
-    def login(self):
+    def login(self) -> None:
         """
         Login process (blocking)
 
@@ -369,6 +379,9 @@ class Telegram:
 
             if result:
                 result.wait(raise_exc=True)
+
+                if result.update is None:
+                    raise RuntimeError('Something wrong, the result update is None')
 
                 if result.id == 'getAuthorizationState':
                     authorization_state = result.update['@type']

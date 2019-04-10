@@ -2,7 +2,7 @@ import json
 import logging
 import platform
 from ctypes import CDLL, CFUNCTYPE, c_int, c_char_p, c_double, c_void_p, c_longlong
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import pkg_resources
 
@@ -26,7 +26,7 @@ class TDJson:
 
         self._build_client(library_path, verbosity)
 
-    def __del__(self):
+    def __del__(self) -> None:
         if hasattr(self, '_tdjson') and hasattr(
             self._tdjson, '_td_json_client_destroy'
         ):
@@ -92,23 +92,25 @@ class TDJson:
         self._td_json_client_send(self.td_json_client, dumped_query)
         logger.debug('[me ==>] Sent %s', dumped_query)
 
-    def receive(self) -> Dict[Any, Any]:
-        result = self._td_json_client_receive(self.td_json_client, 1.0)
+    def receive(self) -> Union[None, Dict[Any, Any]]:
+        result_str = self._td_json_client_receive(self.td_json_client, 1.0)
 
-        if result:
-            result = json.loads(result.decode('utf-8'))
+        if result_str:
+            result: Dict[Any, Any] = json.loads(result_str.decode('utf-8'))
             logger.debug('[me <==] Received %s', result)
+            return result
 
-        return result
+        return None
 
-    def td_execute(self, query: Dict[Any, Any]) -> Dict[Any, Any]:
+    def td_execute(self, query: Dict[Any, Any]) -> Union[Dict[Any, Any], Any]:
         dumped_query = json.dumps(query).encode('utf-8')
-        result = self._td_json_client_execute(self.td_json_client, dumped_query)
+        result_str = self._td_json_client_execute(self.td_json_client, dumped_query)
 
-        if result:
-            result = json.loads(result.decode('utf-8'))
+        if result_str:
+            result: Dict[Any, Any] = json.loads(result_str.decode('utf-8'))
+            return result
 
-        return result
+        return None
 
     def stop(self) -> None:
         self._td_json_client_destroy(self.td_json_client)

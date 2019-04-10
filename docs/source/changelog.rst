@@ -2,6 +2,10 @@
 Changelog
 =========
 
+[0.10.0] - 2019-04-10
+
+- **Incompatible** Linux library has been changed, now it's compiled on Ubuntu with libc.
+
 [0.9.0] - 2019-04-05
 
 - **Incompatible** default path for files is changed. Now the library uses an md5 hash of the phone number or bot token instead of just a phone number.

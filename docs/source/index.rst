@@ -47,8 +47,7 @@ Now you can start using the library: :ref:`tutorial`.
     You can find more examples `here <https://github.com/alexander-akhmetov/python-telegram/tree/master/examples>`_.
 
 .. note::
-    Compiled version of ``tdlib`` for Linux provided by ``python-shortcuts`` is built on Alpine Linux using ``musl``.
-	If you use another distributive, probably you will need to install ``musl-libc``.
+    The ``tdlib`` binary for Linux provided by ``python-shortcuts`` is built on Ubuntu with libc since version ``0.10.0``. Before ``0.10.0``, Alpine Linux was used with ``musl``.
 
 Docker
 ------

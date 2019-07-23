@@ -219,6 +219,37 @@ class Telegram:
 
         return self._send_data(data)
 
+    def get_message(
+        self,
+        chat_id,
+        message_id,
+    ) -> AsyncResult:
+        """
+        Return a message via its message_id
+
+        Args:
+            chat_id
+            message_id
+
+        Returns:
+            AsyncResult
+            The update will be:
+                {
+                    '@type': 'message',
+                    'id': 1,
+                    'sender_user_id': 2,
+                    'chat_id': 3,
+                    'content': {...},
+                    ...
+                }
+        """
+        data = {
+            '@type': 'getMessage',
+            'chat_id': chat_id,
+            'message_id': message_id,
+        }
+        return self._send_data(data)
+
     def get_web_page_instant_view(
         self, url: str, force_full: bool = False
     ) -> AsyncResult:

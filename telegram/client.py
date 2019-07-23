@@ -218,7 +218,7 @@ class Telegram:
         }
 
         return self._send_data(data)
-    
+
     def get_message(
         self,
         chat_id,

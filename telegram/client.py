@@ -266,7 +266,7 @@ class Telegram:
         return self._send_data(data)
 
     def call_method(
-        self, method_name: str, params: Optional[Dict[str, Any]] = None
+            self, method_name: str, params: Optional[Dict[str, Any]] = None, block: bool = False,
     ) -> AsyncResult:
         """
         Use this method to call any other method of the tdlib
@@ -280,7 +280,7 @@ class Telegram:
         if params:
             data.update(params)
 
-        return self._send_data(data)
+        return self._send_data(data, block=block)
 
     def _run(self) -> None:
         self._is_enabled = True
@@ -343,8 +343,13 @@ class Telegram:
             self._update_handlers[handler_type].append(func)
 
     def _send_data(
-        self, data: Dict[Any, Any], result_id: Optional[str] = None
+            self, data: Dict[Any, Any], result_id: Optional[str] = None, block: bool = False,
     ) -> AsyncResult:
+        """
+        Sends data to tdlib.
+
+        If `block`is True, waits for the result
+        """
         if '@extra' not in data:
             data['@extra'] = {}
 
@@ -357,6 +362,9 @@ class Telegram:
         self._tdjson.send(data)
         self._results[async_result.id] = async_result
         async_result.request = data
+
+        if block:
+            async_result.wait(raise_exc=True)
 
         return async_result
 

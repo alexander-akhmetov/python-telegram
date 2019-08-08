@@ -11,6 +11,7 @@ import threading
 from typing import Any, Dict, List, Type, Callable, Optional, DefaultDict, Tuple, Union
 from types import FrameType
 from collections import defaultdict
+import enum
 
 from telegram import VERSION
 from telegram.utils import AsyncResult
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 MESSAGE_HANDLER_TYPE: str = 'updateNewMessage'
 
+AuthorizationState = enum.Enum('AuthorizationState', 'IDLE WAIT_CODE WAIT_PWD DONE FAILED')
 
 class Telegram:
     def __init__(
@@ -80,6 +82,7 @@ class Telegram:
         self.proxy_port = proxy_port
         self.proxy_type = proxy_type
         self.use_secret_chats = use_secret_chats
+        self._login_status = AuthorizationState.IDLE
 
         if not self.bot_token and not self.phone:
             raise ValueError('You must provide bot_token or phone')
@@ -463,6 +466,20 @@ class Telegram:
 
         return self._send_data(data, result_id='getAuthorizationState')
 
+    def _wait_authorization_result(self, result) -> str:
+        authorization_state = None
+        if result:
+            result.wait(raise_exc=True)
+
+            if result.update is None:
+                raise RuntimeError('Something wrong, the result update is None')
+
+            if result.id == 'getAuthorizationState':
+                authorization_state = result.update['@type']
+            else:
+                authorization_state = result.update['authorization_state']['@type']
+        return authorization_state
+
     def login(self) -> None:
         """
         Login process (blocking)
@@ -491,17 +508,55 @@ class Telegram:
         while not self._authorized:
             logger.info('[login] current authorization state: %s', authorization_state)
             result = actions[authorization_state]()
+            authorization_state = self._wait_authorization_result(result)
 
-            if result:
-                result.wait(raise_exc=True)
+    def _non_blocking_login_routine(self, authorization_state) -> AuthorizationState:
+        actions = {
+            None: self.get_authorization_state,
+            'authorizationStateWaitTdlibParameters': self._set_initial_params,
+            'authorizationStateWaitEncryptionKey': self._send_encryption_key,
+            'authorizationStateWaitPhoneNumber': self._send_phone_number_or_bot_token,
+            'authorizationStateWaitCode': self._send_telegram_code,
+            'authorizationStateWaitPassword': self._send_password,
+            'authorizationStateReady': self._complete_authorization,
+        }
+        while not self._authorized:
+            logger.info('[non_blocking_login] current authorization state: %s', authorization_state)
 
-                if result.update is None:
-                    raise RuntimeError('Something wrong, the result update is None')
+            if authorization_state == 'authorizationStateWaitCode':
+                return AuthorizationState.WAIT_CODE
+            if authorization_state == 'authorizationStateWaitPassword':
+                return AuthorizationState.WAIT_PWD
 
-                if result.id == 'getAuthorizationState':
-                    authorization_state = result.update['@type']
-                else:
-                    authorization_state = result.update['authorization_state']['@type']
+            result = actions[authorization_state]()
+            authorization_state = self._wait_authorization_result(result)
+
+        return AuthorizationState.DONE
+
+    def start_login(self) -> AuthorizationState:
+        """
+        Login process (not blocking)
+
+        Must be called before any other call.
+        It sends initial params to the tdlib, sets database encryption key, etc.
+
+        :returns:
+         - AuthorizationState.WAIT_CODE if a telegram code is required. The caller should ask the telegram code
+           to the end user and then call send_code(code)
+         - AuthorizationState.WAIT_PWD if a telegram password is required. The caller should ask the telegram password
+           to the end user and then call send_password(password)
+         - AuthorizationState.DONE if the login process scceeded.
+
+        :raises: RuntimeError if the loin failed
+
+        """
+
+        if self.phone:
+            logger.info('[start_login] non blocking login process has been started with phone')
+        else:
+            logger.info('[start_login] non blocking login process has been started with bot token')
+
+        return self._non_blocking_login_routine(None)
 
     def _set_initial_params(self) -> AsyncResult:
         logger.info(
@@ -580,19 +635,58 @@ class Telegram:
 
         return self._send_data(data, result_id='updateAuthorizationState')
 
-    def _send_telegram_code(self) -> AsyncResult:
+    def _send_telegram_code(self, code=None) -> AsyncResult:
         logger.info('Sending code')
-        code = input('Enter code:')
+        if code is None:
+            code = input('Enter code:')
         data = {'@type': 'checkAuthenticationCode', 'code': str(code)}
 
         return self._send_data(data, result_id='updateAuthorizationState')
 
-    def _send_password(self) -> AsyncResult:
+    def send_code(self, code: str) -> AuthorizationState:
+        """
+        verifies a telegra code and continues the authorization process
+
+        :params:
+          code the code to be verified. If code is None, it will be asked to the user using the input() function
+
+        :returns:
+         - AuthorizationState.WAIT_PWD if a telegram password is required. The caller should ask the telegram password
+           to the end user and then call send_password(password)
+         - AuthorizationState.DONE if the login process scceeded.
+
+        :raises: RuntimeError if the loin failed
+
+        """
+        result = self._send_telegram_code(code)
+        next_action = self._wait_authorization_result(result)
+        return self._non_blocking_login_routine(next_action)
+
+    def _send_password(self, password=None) -> AsyncResult:
         logger.info('Sending password')
-        password = getpass.getpass('Password:')
+        if password is None:
+            password = getpass.getpass('Password:')
         data = {'@type': 'checkAuthenticationPassword', 'password': password}
 
         return self._send_data(data, result_id='updateAuthorizationState')
+
+    def send_password(self, password: str) -> AsyncResult:
+        """
+        verifies a telegra password and continues the authorization process
+
+        :params:
+          password the password to be verified.
+          If password is None, it will be asked to the user using the getpass.getpass() function
+
+        :returns:
+         - AuthorizationState.DONE if the login process scceeded.
+
+        :raises: RuntimeError if the loin failed
+
+        """
+        result = self._send_password(password)
+        next_action = self._wait_authorization_result(result)
+        return self._non_blocking_login_routine(next_action)
 
     def _complete_authorization(self) -> None:
         logger.info('Completing auth process')

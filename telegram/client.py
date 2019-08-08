@@ -25,6 +25,7 @@ MESSAGE_HANDLER_TYPE: str = 'updateNewMessage'
 
 AuthorizationState = enum.Enum('AuthorizationState', 'IDLE WAIT_CODE WAIT_PWD DONE FAILED')
 
+
 class Telegram:
     def __init__(
         self,

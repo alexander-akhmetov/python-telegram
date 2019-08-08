@@ -24,6 +24,7 @@ MESSAGE_HANDLER_TYPE: str = 'updateNewMessage'
 
 AuthorizationState = enum.Enum('AuthorizationState', 'IDLE WAIT_CODE WAIT_PWD DONE FAILED')
 
+
 class Telegram:
     def __init__(
         self,
@@ -574,7 +575,7 @@ class Telegram:
         verifies a telegra password and continues the authorization process
 
         :params:
-          password the password to be verified. 
+          password the password to be verified.
           If password is None, it will be asked to the user using the getpass.getpass() function
 
         :returns:

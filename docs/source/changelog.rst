@@ -2,6 +2,11 @@
 Changelog
 =========
 
+[unreleased]
+
+- Added a new parameter to the `call_method`: `block=False`. If it is set to `True`, the method waits for the result from tdlib.
+- Added `Telegram.get_message` method (thanks to @ali-shokoohi)
+
 [0.10.0] - 2019-04-10
 
 - **Incompatible** Linux library has been changed, now it's compiled on Ubuntu with libc.

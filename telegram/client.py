@@ -358,9 +358,8 @@ class Telegram:
 
         async_result = AsyncResult(client=self, result_id=result_id)
         data['@extra']['request_id'] = async_result.id
-
-        self._tdjson.send(data)
         self._results[async_result.id] = async_result
+        self._tdjson.send(data)
         async_result.request = data
 
         if block:

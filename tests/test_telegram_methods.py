@@ -301,6 +301,7 @@ class TestTelegram__login:
             result = AsyncResult(client=telegram)
 
             result.update = data
+            result._ready.set()
             result.id = request_id
 
             return result

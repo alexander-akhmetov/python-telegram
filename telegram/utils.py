@@ -1,5 +1,5 @@
-import time
 import uuid
+import threading
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
@@ -25,6 +25,7 @@ class AsyncResult:
         self.error = False
         self.error_info: Optional[Dict[Any, Any]] = None
         self.update: Optional[Dict[Any, Any]] = None
+        self._ready = threading.Event()
 
     def __str__(self) -> str:
         return f'AsyncResult <{self.id}>'
@@ -33,15 +34,11 @@ class AsyncResult:
         """
         Blocking method to wait for the result
         """
-        started_at = time.time()
-        while True:
-            if self.update or self.error:
-                if raise_exc and self.error:
-                    raise RuntimeError(f'Telegram error: {self.error_info}')
-                return
-            time.sleep(0.01)
-            if timeout and time.time() - started_at > timeout:
-                raise TimeoutError()
+        result = self._ready.wait(timeout=timeout)
+        if result is False:
+            raise TimeoutError()
+        if raise_exc and self.error:
+            raise RuntimeError(f'Telegram error: {self.error_info}')
 
     def parse_update(self, update: Dict[Any, Any]) -> None:
         if update.get('@type') == 'ok':
@@ -51,3 +48,5 @@ class AsyncResult:
             self.error_info = update
         else:
             self.update = update
+
+        self._ready.set()

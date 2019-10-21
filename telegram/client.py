@@ -221,8 +221,8 @@ class Telegram:
 
     def get_message(
         self,
-        chat_id,
-        message_id,
+        chat_id: int,
+        message_id: int,
     ) -> AsyncResult:
         """
         Return a message via its message_id

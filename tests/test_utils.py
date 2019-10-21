@@ -68,12 +68,14 @@ class TestAsyncResult(object):
     def test_wait_with_update(self):
         ar = AsyncResult(client=None)
         ar.update = '123'
+        ar._ready.set()
         ar.wait(timeout=0.01)
 
     def test_wait_with_error_and_raise_exc(self):
         ar = AsyncResult(client=None)
         ar.error = True
         ar.error_info = 'some_error'
+        ar._ready.set()
         try:
             ar.wait(timeout=0.1, raise_exc=True)
             raised = False
@@ -86,4 +88,5 @@ class TestAsyncResult(object):
         ar = AsyncResult(client=None)
         ar.error = True
         ar.error_info = 'some_error'
+        ar._ready.set()
         ar.wait(timeout=0.01)

@@ -1,6 +1,5 @@
-pytest
-flake8
-pylint
-ipdb
-pytest-mock
-mypy
+pytest==5.2.2
+flake8==3.7.9
+pylint==2.4.3
+ipdb==0.12.2
+mypy==0.740

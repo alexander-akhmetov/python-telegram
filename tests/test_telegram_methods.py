@@ -1,5 +1,7 @@
 import pytest
 
+from unittest.mock import patch
+
 from telegram import VERSION
 from telegram.utils import AsyncResult
 from telegram.client import Telegram, MESSAGE_HANDLER_TYPE
@@ -12,9 +14,9 @@ DATABASE_ENCRYPTION_KEY = 'changeme1234'
 
 
 @pytest.fixture
-def telegram(mocker):
-    with mocker.mock_module.patch('telegram.client.TDJson'):
-        with mocker.mock_module.patch('telegram.client.threading'):
+def telegram():
+    with patch('telegram.client.TDJson'):
+        with patch('telegram.client.threading'):
             tg = Telegram(
                 api_id=API_ID,
                 api_hash=API_HASH,
@@ -54,9 +56,9 @@ class TestTelegram:
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
 
-    def test_send_phone_number_or_bot_token(self, telegram, mocker):
+    def test_send_phone_number_or_bot_token(self, telegram):
         # check that the dunction calls _send_phone_number or _send_bot_token
-        with mocker.patch.object(telegram, '_send_phone_number'), mocker.patch.object(
+        with patch.object(telegram, '_send_phone_number'), patch.object(
             telegram, '_send_bot_token'
         ):
 
@@ -74,10 +76,10 @@ class TestTelegram:
             telegram._send_phone_number_or_bot_token()
             telegram._send_bot_token.assert_called_once()
 
-    def test_send_bot_token(self, telegram, mocker):
+    def test_send_bot_token(self, telegram):
         telegram.bot_token = 'some-token'
 
-        with mocker.patch.object(telegram, '_send_data'):
+        with patch.object(telegram, '_send_data'):
             telegram._send_bot_token()
 
             exp_data = {'@type': 'checkAuthenticationBotToken', 'token': 'some-token'}
@@ -110,31 +112,25 @@ class TestTelegram:
 
         assert telegram._update_handlers[my_update_type] == [my_handler]
 
-    def test_run_handlers(self, telegram, mocker):
+    def test_run_handlers(self, telegram):
         def my_handler():
             pass
 
         telegram.add_message_handler(my_handler)
 
-        with mocker.mock_module.patch.object(
-            telegram._workers_queue, 'put'
-        ) as mocked_put:
+        with patch.object(telegram._workers_queue, 'put') as mocked_put:
             update = {'@type': MESSAGE_HANDLER_TYPE}
             telegram._run_handlers(update)
 
             mocked_put.assert_called_once_with((my_handler, update), timeout=10)
 
-    def test_run_handlers_should_not_be_called_for_another_update_type(
-        self, telegram, mocker
-    ):
+    def test_run_handlers_should_not_be_called_for_another_update_type(self, telegram):
         def my_handler():
             pass
 
         telegram.add_message_handler(my_handler)
 
-        with mocker.mock_module.patch.object(
-            telegram._workers_queue, 'put'
-        ) as mocked_put:
+        with patch.object(telegram._workers_queue, 'put') as mocked_put:
             update = {'@type': 'some-type'}
             telegram._run_handlers(update)
 

@@ -6,7 +6,7 @@
 ![Read the Docs (version)](https://img.shields.io/readthedocs/pip/stable.svg)
 
 Python API for the [tdlib](https://github.com/tdlib/td) library.
-If helps you build your own Telegram clients.
+It helps you build your own Telegram clients.
 
 * [Changelog](docs/source/changelog.rst)
 * [Documentation](http://python-telegram.readthedocs.io)

@@ -8,6 +8,7 @@ Changelog
 - Added a new parameter to the ``call_method``: ``block=False``. If it is set to ``True``, the method waits for the result from tdlib.
 - Added ``Telegram.get_message`` method (thanks to @ali-shokoohi)
 - Fixed a race condition when in some cases ``AsyncResult.wait()`` could raise ``TimeoutError`` or end up in an endless loop. (thanks to @akamaus)
+- Added a new meyhod: ``get_user``.
 
 [0.10.0] - 2019-04-10
 

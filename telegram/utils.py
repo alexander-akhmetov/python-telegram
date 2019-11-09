@@ -43,10 +43,14 @@ class AsyncResult:
     def parse_update(self, update: Dict[Any, Any]) -> None:
         if update.get('@type') == 'ok':
             self.ok_received = True
-        elif update.get('@type') == 'error':
+            return False
+
+        if update.get('@type') == 'error':
             self.error = True
             self.error_info = update
         else:
             self.update = update
 
         self._ready.set()
+
+        return True

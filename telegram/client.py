@@ -334,8 +334,9 @@ class Telegram:
                 'async_result has not been found in by request_id=%s', request_id
             )
         else:
-            async_result.parse_update(update)
-            self._results.pop(request_id, None)
+            done = async_result.parse_update(update)
+            if done:
+                self._results.pop(request_id, None)
 
         return async_result
 

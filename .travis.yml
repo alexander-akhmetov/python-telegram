@@ -2,7 +2,8 @@ sudo: false
 language: python
 python:
     - "3.6"
-    - "3.7-dev"
+    - "3.7"
+    - "3.8"
 install: pip install tox-travis flake8 pylint
 script:
     - flake8 telegram

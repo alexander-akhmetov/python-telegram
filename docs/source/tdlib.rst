@@ -27,8 +27,8 @@ Also, you can use it with Docker:
 
 You can call any method of ``tdlib`` with ``python-telegram`` using ``call_method``:
 
-.. code:block:: python
+.. code-block:: python
 
-                tg = Telegram(...)
-                params = {'user_id': 1}
-                result = tg.call_method('getUser', params)
+    tg = Telegram(...)
+    params = {'user_id': 1}
+    result = tg.call_method('getUser', params)

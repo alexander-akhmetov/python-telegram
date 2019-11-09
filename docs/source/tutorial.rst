@@ -7,13 +7,15 @@ Tutorial
 How to build a simple echo-bot with ``python-telegram``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Install the library:
+
 .. code-block:: bash
 
      python3 -m pip install python-telegram
 
-Ok, now you have installed the library. Let's create a simple echo-bot, which sends "pong" if receives "ping".
+Let's create a simple echo-bot, which sends "pong" when it receives "ping".
 
-At first, initialize telegram client with your credentials:
+Initialize a new telegram client with your credentials:
 
 .. code-block:: python
 
@@ -31,19 +33,21 @@ At first, initialize telegram client with your credentials:
     You can change this behaviour with the ``files_directory`` parameter.
 
 .. note::
-    You can use bot token: just pass ``bot_token`` instead of ``phone``.
+    You can use bot tokens: just pass ``bot_token`` instead of ``phone``.
 
-After, you have to login:
+After that, you have to login:
 
 .. code-block:: python
 
     tg.login()
 
-It's a blocking call. Telegram will send you a code in an SMS or in the messenger. Enter this code. If you have enabled 2FA,
+`login` is a blocking call. Telegram will send you a code in an SMS or as a Telegram message. If you have enabled 2FA,
 you will be asked for a password too. After successful login you can start using the library:
 
 .. code-block:: python
 
+    # this fucntion will be called
+    # for each received message
     def new_message_handler(update):
         print('New message!')
 
@@ -60,27 +64,26 @@ If you run this code, you will see something like that:
     New message!
     New message!
 
-Let's add more logic inside the message handler:
+Let's add more logic to the message handler:
 
 .. code-block:: python
 
     def new_message_handler(update):
+        # we want to process only text messages
         message_content = update['message']['content'].get('text', {})
-        # we need this because of different message types: photos, files, etc.
         message_text = message_content.get('text', '').lower()
 
         if message_text == 'ping':
             chat_id = update['message']['chat_id']
             print(f'Ping has been received from {chat_id}')
             tg.send_message(
-                chat_id=chat_id,  # str
+                chat_id=chat_id,
                 text='pong',
             )
 
-The full code:
+Full code of our new bot:
 
 .. code-block:: python
-
 
     from telegram.client import Telegram
 
@@ -93,8 +96,8 @@ The full code:
     tg.login()
 
     def new_message_handler(update):
+        # we want to process only text messages
         message_content = update['message']['content'].get('text', {})
-        # we need this because of different message types: photos, files, etc.
         message_text = message_content.get('text', '').lower()
 
         if message_text == 'ping':
@@ -106,6 +109,6 @@ The full code:
             )
 
     tg.add_message_handler(new_message_handler)
-    tg.idle()  # blocking waiting for CTRL+C
+    tg.idle()
 
-Done! You have built your first and very simple client for the Telegram Messenger.
+Done! You have created your first client for the Telegram Messenger.

@@ -45,6 +45,7 @@ class Telegram:
         proxy_server: str = '',
         proxy_port: int = 0,
         proxy_type: Optional[Dict[str, str]] = None,
+        use_secret_chats: bool = True,
     ) -> None:
         """
         Args:
@@ -56,6 +57,7 @@ class Telegram:
             files_directory - directory for the tdlib's files (database, images, etc.)
             use_test_dc - use test datacenter
             use_message_database
+            use_secret_chats
             device_model
             application_version
             system_version
@@ -76,6 +78,7 @@ class Telegram:
         self.proxy_server = proxy_server
         self.proxy_port = proxy_port
         self.proxy_type = proxy_type
+        self.use_secret_chats = use_secret_chats
 
         if not self.bot_token and not self.phone:
             raise ValueError('You must provide bot_token or phone')
@@ -234,11 +237,7 @@ class Telegram:
 
         return self._send_data(data)
 
-    def get_message(
-        self,
-        chat_id: int,
-        message_id: int,
-    ) -> AsyncResult:
+    def get_message(self, chat_id: int, message_id: int,) -> AsyncResult:
         """
         Return a message via its message_id
 
@@ -266,10 +265,7 @@ class Telegram:
         return self._send_data(data)
 
     def delete_messages(
-        self,
-        chat_id: int,
-        message_ids: List[int],
-        revoke: bool = True
+        self, chat_id: int, message_ids: List[int], revoke: bool = True
     ) -> AsyncResult:
         """
         Delete a list of messages in a chat
@@ -279,12 +275,14 @@ class Telegram:
             message_ids
             revoke
         """
-        return self._send_data({
-            '@type': 'deleteMessages',
-            'chat_id': chat_id,
-            'message_ids': message_ids,
-            'revoke': revoke
-        })
+        return self._send_data(
+            {
+                '@type': 'deleteMessages',
+                'chat_id': chat_id,
+                'message_ids': message_ids,
+                'revoke': revoke,
+            }
+        )
 
     def get_supergroup_full_info(self, supergroup_id: int) -> AsyncResult:
         """
@@ -293,10 +291,9 @@ class Telegram:
         Args:
             supergroup_id
         """
-        return self._send_data({
-            '@type': 'getSupergroupFullInfo',
-            'supergroup_id': supergroup_id
-        })
+        return self._send_data(
+            {'@type': 'getSupergroupFullInfo', 'supergroup_id': supergroup_id}
+        )
 
     def create_basic_group_chat(self, basic_group_id: int) -> AsyncResult:
         """
@@ -305,10 +302,9 @@ class Telegram:
         Args:
             basic_group_id
         """
-        return self._send_data({
-            '@type': 'createBasicGroupChat',
-            'basic_group_id': basic_group_id
-        })
+        return self._send_data(
+            {'@type': 'createBasicGroupChat', 'basic_group_id': basic_group_id}
+        )
 
     def get_web_page_instant_view(
         self, url: str, force_full: bool = False
@@ -326,7 +322,10 @@ class Telegram:
         return self._send_data(data)
 
     def call_method(
-            self, method_name: str, params: Optional[Dict[str, Any]] = None, block: bool = False,
+        self,
+        method_name: str,
+        params: Optional[Dict[str, Any]] = None,
+        block: bool = False,
     ) -> AsyncResult:
         """
         Use this method to call any other method of the tdlib
@@ -414,7 +413,10 @@ class Telegram:
             self._update_handlers[handler_type].append(func)
 
     def _send_data(
-            self, data: Dict[Any, Any], result_id: Optional[str] = None, block: bool = False,
+        self,
+        data: Dict[Any, Any],
+        result_id: Optional[str] = None,
+        block: bool = False,
     ) -> AsyncResult:
         """
         Sends data to tdlib.
@@ -520,6 +522,7 @@ class Telegram:
                 'database_directory': os.path.join(self.files_directory, 'database'),
                 'use_message_database': self.use_message_database,
                 'files_directory': os.path.join(self.files_directory, 'files'),
+                'use_secret_chats': self.use_secret_chats,
             },
         }
 

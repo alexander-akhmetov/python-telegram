@@ -42,6 +42,7 @@ class Telegram:
         login: bool = False,
         default_workers_queue_size: int = 1000,
         tdlib_verbosity: int = 2,
+        use_secret_chats: bool = True,
     ) -> None:
         """
         Args:
@@ -53,6 +54,7 @@ class Telegram:
             files_directory - directory for the tdlib's files (database, images, etc.)
             use_test_dc - use test datacenter
             use_message_database
+            use_secret_chats
             device_model
             application_version
             system_version
@@ -70,6 +72,7 @@ class Telegram:
         self.application_version = application_version
         self.use_message_database = use_message_database
         self._queue_put_timeout = 10
+        self.use_secret_chats = use_secret_chats
 
         if not self.bot_token and not self.phone:
             raise ValueError('You must provide bot_token or phone')
@@ -456,6 +459,7 @@ class Telegram:
                 'database_directory': os.path.join(self.files_directory, 'database'),
                 'use_message_database': self.use_message_database,
                 'files_directory': os.path.join(self.files_directory, 'files'),
+                'use_secret_chats': self.use_secret_chats,
             },
         }
 

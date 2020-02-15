@@ -2,13 +2,14 @@
 Changelog
 =========
 
-[unreleased]
+[0.11.0] - 2020-02-15
 
 - ``tdlib`` upgraded to ``v1.6.0`` (from `this repository <https://github.com/alexander-akhmetov/tdlib-compiled>`_)
 - Added a new parameter to the ``call_method``: ``block=False``. If it is set to ``True``, the method waits for the result from tdlib.
 - Added ``Telegram.get_message`` method (thanks to @ali-shokoohi)
 - Fixed a race condition when in some cases ``AsyncResult.wait()`` could raise ``TimeoutError`` or end up in an endless loop. (thanks to @akamaus)
 - Added a new method: ``get_user``.
+- Added ``Telegram.remove_update_handler`` function to remove update handlers.
 
 [0.10.0] - 2019-04-10
 

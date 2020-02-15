@@ -4,7 +4,7 @@ Changelog
 
 [unreleased]
 
-- ``tdlib`` upgraded to ``v1.5.0`` (from `this repository <https://github.com/alexander-akhmetov/tdlib-compiled>`_)
+- ``tdlib`` upgraded to ``v1.6.0`` (from `this repository <https://github.com/alexander-akhmetov/tdlib-compiled>`_)
 - Added a new parameter to the ``call_method``: ``block=False``. If it is set to ``True``, the method waits for the result from tdlib.
 - Added ``Telegram.get_message`` method (thanks to @ali-shokoohi)
 - Fixed a race condition when in some cases ``AsyncResult.wait()`` could raise ``TimeoutError`` or end up in an endless loop. (thanks to @akamaus)

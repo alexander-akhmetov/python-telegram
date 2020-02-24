@@ -2,6 +2,13 @@
 Changelog
 =========
 
+[unreleased]
+
+- New example: ``examples/clear_group_messages.py`` (thanks to @h4x3rotab)
+- Proxy support (thanks to @h4x3rotab)
+- New methods: ``delete_messages``, ``get_supergroup_full_info``, ``create_basic_group_chat``. (thanks to @h4x3rotab)
+- Fix #67: fixed infinite waiting for a result during login or for an `ok` result type.
+
 [0.11.0] - 2020-02-15
 
 - ``tdlib`` upgraded to ``v1.6.0`` (from `this repository <https://github.com/alexander-akhmetov/tdlib-compiled>`_)

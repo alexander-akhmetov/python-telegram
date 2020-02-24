@@ -1,12 +1,14 @@
 import argparse
 
 from telegram.client import Telegram
+import utils
 
 if __name__ == '__main__':
+    utils.setup_logging()
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('api_id', help='API id')  # https://my.telegram.org/apps
-    parser.add_argument('api_hash', help='API hash')
-    parser.add_argument('phone', help='Phone')
+    utils.add_api_args(parser)
+    utils.add_proxy_args(parser)
     args = parser.parse_args()
 
     tg = Telegram(
@@ -14,6 +16,9 @@ if __name__ == '__main__':
         api_hash=args.api_hash,
         phone=args.phone,
         database_encryption_key='changeme1234',
+        proxy_server=args.proxy_server,
+        proxy_port=args.proxy_port,
+        proxy_type=utils.parse_proxy_type(args)
     )
     # you must call login method before others
     tg.login()

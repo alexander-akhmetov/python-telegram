@@ -44,7 +44,7 @@ class Telegram:
         tdlib_verbosity: int = 2,
         proxy_server: str = '',
         proxy_port: int = 0,
-        proxy_type: Dict[str, str] = {'@type': 'proxyTypeSocks5', 'username': '', 'password': ''},
+        proxy_type: Optional[Dict[str, str]] = None,
     ) -> None:
         """
         Args:
@@ -264,7 +264,7 @@ class Telegram:
             'message_id': message_id,
         }
         return self._send_data(data)
-    
+
     def delete_messages(
         self,
         chat_id: int,
@@ -468,7 +468,7 @@ class Telegram:
         It sends initial params to the tdlib, sets database encryption key, etc.
         """
         if self.proxy_server:
-            r = self._send_add_proxy()
+            self._send_add_proxy()
 
         authorization_state = None
         actions = {

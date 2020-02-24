@@ -1,9 +1,13 @@
 import uuid
 import threading
+import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
     from telegram.client import Telegram  # noqa  pylint: disable=cyclic-import
+
+
+logger = logging.getLogger(__name__)
 
 
 class AsyncResult:
@@ -41,12 +45,18 @@ class AsyncResult:
             raise RuntimeError(f'Telegram error: {self.error_info}')
 
     def parse_update(self, update: Dict[Any, Any]) -> None:
-        if update.get('@type') == 'ok':
-            self.ok_received = True
-            self._ready.set()
-            return False
+        update_type = update.get('@type')
 
-        if update.get('@type') == 'error':
+        logger.debug('update id=%s type=%s received', self.id, update_type)
+
+        if update_type == 'ok':
+            self.ok_received = True
+            if self.id == 'updateAuthorizationState':
+                # For updateAuthorizationState commands tdlib sends
+                # @type: ok responses
+                # but we want to wait longer to receive the new authorization state
+                return False
+        elif update_type == 'error':
             self.error = True
             self.error_info = update
         else:

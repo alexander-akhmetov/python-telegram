@@ -45,6 +45,7 @@ class Telegram:
         proxy_server: str = '',
         proxy_port: int = 0,
         proxy_type: Optional[Dict[str, str]] = None,
+        use_secret_chats: bool = True,
     ) -> None:
         """
         Args:
@@ -56,6 +57,7 @@ class Telegram:
             files_directory - directory for the tdlib's files (database, images, etc.)
             use_test_dc - use test datacenter
             use_message_database
+            use_secret_chats
             device_model
             application_version
             system_version
@@ -76,6 +78,7 @@ class Telegram:
         self.proxy_server = proxy_server
         self.proxy_port = proxy_port
         self.proxy_type = proxy_type
+        self.use_secret_chats = use_secret_chats
 
         if not self.bot_token and not self.phone:
             raise ValueError('You must provide bot_token or phone')
@@ -519,6 +522,7 @@ class Telegram:
                 'database_directory': os.path.join(self.files_directory, 'database'),
                 'use_message_database': self.use_message_database,
                 'files_directory': os.path.join(self.files_directory, 'files'),
+                'use_secret_chats': self.use_secret_chats,
             },
         }
 

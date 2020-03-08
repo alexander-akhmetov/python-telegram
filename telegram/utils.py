@@ -44,7 +44,7 @@ class AsyncResult:
         if raise_exc and self.error:
             raise RuntimeError(f'Telegram error: {self.error_info}')
 
-    def parse_update(self, update: Dict[Any, Any]) -> None:
+    def parse_update(self, update: Dict[Any, Any]) -> bool:
         update_type = update.get('@type')
 
         logger.debug('update id=%s type=%s received', self.id, update_type)

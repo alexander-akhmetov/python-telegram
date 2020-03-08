@@ -1,6 +1,7 @@
 # python-telegram
 
 [![Build Status](https://travis-ci.org/alexander-akhmetov/python-telegram.svg?branch=master)](https://travis-ci.org/alexander-akhmetov/python-telegram)
+![Build Status](https://github.com/alexander-akhmetov/python-telegram/workflows/.github/workflows/tests.yml/badge.svg)]
 [![PyPI](https://img.shields.io/pypi/v/python-telegram.svg)](https://pypi.python.org/pypi/python-telegram)
 [![DockerHub](https://img.shields.io/docker/automated/akhmetov/python-telegram.svg)](https://hub.docker.com/r/akhmetov/python-telegram/)
 ![Read the Docs (version)](https://img.shields.io/readthedocs/pip/stable.svg)

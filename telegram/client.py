@@ -172,7 +172,7 @@ class Telegram:
 
         return self.call_method('getMe')
 
-    def get_user(self, user_id) -> AsyncResult:
+    def get_user(self, user_id: int) -> AsyncResult:
         """
         Requests information about a user with id = user_id.
 
@@ -234,11 +234,7 @@ class Telegram:
 
         return self._send_data(data)
 
-    def get_message(
-        self,
-        chat_id: int,
-        message_id: int,
-    ) -> AsyncResult:
+    def get_message(self, chat_id: int, message_id: int,) -> AsyncResult:
         """
         Return a message via its message_id
 
@@ -266,10 +262,7 @@ class Telegram:
         return self._send_data(data)
 
     def delete_messages(
-        self,
-        chat_id: int,
-        message_ids: List[int],
-        revoke: bool = True
+        self, chat_id: int, message_ids: List[int], revoke: bool = True
     ) -> AsyncResult:
         """
         Delete a list of messages in a chat
@@ -279,12 +272,14 @@ class Telegram:
             message_ids
             revoke
         """
-        return self._send_data({
-            '@type': 'deleteMessages',
-            'chat_id': chat_id,
-            'message_ids': message_ids,
-            'revoke': revoke
-        })
+        return self._send_data(
+            {
+                '@type': 'deleteMessages',
+                'chat_id': chat_id,
+                'message_ids': message_ids,
+                'revoke': revoke,
+            }
+        )
 
     def get_supergroup_full_info(self, supergroup_id: int) -> AsyncResult:
         """
@@ -293,10 +288,9 @@ class Telegram:
         Args:
             supergroup_id
         """
-        return self._send_data({
-            '@type': 'getSupergroupFullInfo',
-            'supergroup_id': supergroup_id
-        })
+        return self._send_data(
+            {'@type': 'getSupergroupFullInfo', 'supergroup_id': supergroup_id}
+        )
 
     def create_basic_group_chat(self, basic_group_id: int) -> AsyncResult:
         """
@@ -305,10 +299,9 @@ class Telegram:
         Args:
             basic_group_id
         """
-        return self._send_data({
-            '@type': 'createBasicGroupChat',
-            'basic_group_id': basic_group_id
-        })
+        return self._send_data(
+            {'@type': 'createBasicGroupChat', 'basic_group_id': basic_group_id}
+        )
 
     def get_web_page_instant_view(
         self, url: str, force_full: bool = False
@@ -326,7 +319,10 @@ class Telegram:
         return self._send_data(data)
 
     def call_method(
-            self, method_name: str, params: Optional[Dict[str, Any]] = None, block: bool = False,
+        self,
+        method_name: str,
+        params: Optional[Dict[str, Any]] = None,
+        block: bool = False,
     ) -> AsyncResult:
         """
         Use this method to call any other method of the tdlib
@@ -414,7 +410,10 @@ class Telegram:
             self._update_handlers[handler_type].append(func)
 
     def _send_data(
-            self, data: Dict[Any, Any], result_id: Optional[str] = None, block: bool = False,
+        self,
+        data: Dict[Any, Any],
+        result_id: Optional[str] = None,
+        block: bool = False,
     ) -> AsyncResult:
         """
         Sends data to tdlib.

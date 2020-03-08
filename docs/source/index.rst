@@ -62,9 +62,8 @@ This library has a `docker image <https://hub.docker.com/r/akhmetov/python-teleg
                 python3 /app/examples/send_message.py $(API_ID) $(API_HASH) $(PHONE) $(CHAT_ID) $(TEXT)
 
 
-.. |build-status| image:: https://travis-ci.org/alexander-akhmetov/python-telegram.svg?branch=master
-    :alt: build status
-    :target: https://travis-ci.org/alexander-akhmetov/python-telegram
+.. |build-status| image:: https://github.com/alexander-akhmetov/python-telegram/workflows/python-telegram%20tests/badge.svg    :alt: build status
+    :target: https://github.com/alexander-akhmetov/python-telegram/actions
 
 .. |docker-hub| image:: https://img.shields.io/docker/automated/akhmetov/python-telegram.svg
     :alt: Documentation Status

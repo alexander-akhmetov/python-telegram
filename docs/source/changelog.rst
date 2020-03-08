@@ -4,11 +4,19 @@ Changelog
 
 [unreleased]
 
-- ``tdlib`` upgraded to ``v1.5.0`` (from `this repository <https://github.com/alexander-akhmetov/tdlib-compiled>`_)
+- New example: ``examples/clear_group_messages.py`` (thanks to @h4x3rotab)
+- Proxy support (thanks to @h4x3rotab)
+- New methods: ``delete_messages``, ``get_supergroup_full_info``, ``create_basic_group_chat``. (thanks to @h4x3rotab)
+- Fix #67: fixed infinite waiting for a result during login or for an `ok` result type.
+
+[0.11.0] - 2020-02-15
+
+- ``tdlib`` upgraded to ``v1.6.0`` (from `this repository <https://github.com/alexander-akhmetov/tdlib-compiled>`_)
 - Added a new parameter to the ``call_method``: ``block=False``. If it is set to ``True``, the method waits for the result from tdlib.
 - Added ``Telegram.get_message`` method (thanks to @ali-shokoohi)
 - Fixed a race condition when in some cases ``AsyncResult.wait()`` could raise ``TimeoutError`` or end up in an endless loop. (thanks to @akamaus)
 - Added a new method: ``get_user``.
+- Added ``Telegram.remove_update_handler`` function to remove update handlers.
 
 [0.10.0] - 2019-04-10
 

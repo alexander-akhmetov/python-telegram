@@ -5,3 +5,6 @@ build
 .tox
 .mypy_cache
 MANIFEST
+*.pyc
+.DS_Store
+.vscode

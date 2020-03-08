@@ -99,6 +99,29 @@ class TestTelegram:
 
         assert telegram._update_handlers[MESSAGE_HANDLER_TYPE] == [my_handler]
 
+    def test_remove_update_handler(self, telegram):
+        # check remove_update_handler
+        assert telegram._update_handlers[MESSAGE_HANDLER_TYPE] == []
+
+        def my_handler():
+            pass
+
+        telegram.add_message_handler(my_handler)
+
+        telegram.remove_update_handler(MESSAGE_HANDLER_TYPE, my_handler)
+
+        assert telegram._update_handlers[MESSAGE_HANDLER_TYPE] == []
+
+    def test_remove_update_handler_empty_handlers_list(self, telegram):
+        telegram._update_handlers = {}
+
+        def my_handler():
+            pass
+
+        telegram.remove_update_handler(MESSAGE_HANDLER_TYPE, my_handler)
+
+        assert telegram._update_handlers == {}
+
     def test_add_update_handler(self, telegram):
         # check that add_update_handler function
         # appends passsed func to _update_handlers[type] list

@@ -36,6 +36,7 @@ class TestAsyncResult:
         assert async_result.error_info == update
         assert async_result.update is None
         assert async_result.ok_received is False
+        assert async_result._ready.is_set() is True
 
     def test_parse_update_ok(self):
         async_result = AsyncResult(client=None)
@@ -47,6 +48,27 @@ class TestAsyncResult:
         assert async_result.error_info is None
         assert async_result.update is None
         assert async_result.ok_received is True
+        assert async_result._ready.is_set() is True
+
+    def test_parse_update_authorization_state_ok(self):
+        # when id=updateAuthorizationState
+        # and @type=ok
+        # it should not set async_result._ready
+        # because for updateAuthorizationState we want to wait for the
+        # next message with result_id=updateAuthorizationState
+        async_result = AsyncResult(
+            client=None,
+            result_id='updateAuthorizationState',
+        )
+        update = {'@type': 'ok', 'some': 'data'}
+
+        async_result.parse_update(update)
+
+        assert async_result.error is False
+        assert async_result.error_info is None
+        assert async_result.update is None
+        assert async_result.ok_received is True
+        assert async_result._ready.is_set() is False
 
     def test_parse_update(self):
         async_result = AsyncResult(client=None)
@@ -58,6 +80,7 @@ class TestAsyncResult:
         assert async_result.error_info is None
         assert async_result.update == update
         assert async_result.ok_received is False
+        assert async_result._ready.is_set() is True
 
     def test_wait_with_timeout(self):
         async_result = AsyncResult(client=None)

@@ -43,6 +43,9 @@ class Telegram:
         default_workers_queue_size: int = 1000,
         tdlib_verbosity: int = 2,
         use_secret_chats: bool = True,
+        proxy_server: str = '',
+        proxy_port: int = 0,
+        proxy_type: Optional[Dict[str, str]] = None,
     ) -> None:
         """
         Args:
@@ -73,6 +76,9 @@ class Telegram:
         self.use_message_database = use_message_database
         self._queue_put_timeout = 10
         self.use_secret_chats = use_secret_chats
+        self.proxy_server = proxy_server
+        self.proxy_port = proxy_port
+        self.proxy_type = proxy_type
 
         if not self.bot_token and not self.phone:
             raise ValueError('You must provide bot_token or phone')
@@ -262,6 +268,51 @@ class Telegram:
         }
         return self._send_data(data)
 
+    def delete_messages(
+        self,
+        chat_id: int,
+        message_ids: List[int],
+        revoke: bool = True
+    ) -> AsyncResult:
+        """
+        Delete a list of messages in a chat
+
+        Args:
+            chat_id
+            message_ids
+            revoke
+        """
+        return self._send_data({
+            '@type': 'deleteMessages',
+            'chat_id': chat_id,
+            'message_ids': message_ids,
+            'revoke': revoke
+        })
+
+    def get_supergroup_full_info(self, supergroup_id: int) -> AsyncResult:
+        """
+        Get the full info of a supergroup
+
+        Args:
+            supergroup_id
+        """
+        return self._send_data({
+            '@type': 'getSupergroupFullInfo',
+            'supergroup_id': supergroup_id
+        })
+
+    def create_basic_group_chat(self, basic_group_id: int) -> AsyncResult:
+        """
+        Create a chat from a basic group
+
+        Args:
+            basic_group_id
+        """
+        return self._send_data({
+            '@type': 'createBasicGroupChat',
+            'basic_group_id': basic_group_id
+        })
+
     def get_web_page_instant_view(
         self, url: str, force_full: bool = False
     ) -> AsyncResult:
@@ -348,6 +399,16 @@ class Telegram:
         for handler in self._update_handlers[update_type]:
             self._workers_queue.put((handler, update), timeout=self._queue_put_timeout)
 
+    def remove_update_handler(self, handler_type: str, func: Callable) -> None:
+        """
+        Remove a handler with the specified type
+        """
+        try:
+            self._update_handlers[handler_type].remove(func)
+        except (ValueError, KeyError):
+            # not in the list
+            pass
+
     def add_message_handler(self, func: Callable) -> None:
         self.add_update_handler(MESSAGE_HANDLER_TYPE, func)
 
@@ -409,6 +470,9 @@ class Telegram:
         Must be called before any other call.
         It sends initial params to the tdlib, sets database encryption key, etc.
         """
+        if self.proxy_server:
+            self._send_add_proxy()
+
         authorization_state = None
         actions = {
             None: self.get_authorization_state,
@@ -493,6 +557,17 @@ class Telegram:
         }
 
         return self._send_data(data, result_id='updateAuthorizationState')
+
+    def _send_add_proxy(self) -> AsyncResult:
+        logger.info('Sending addProxy')
+        data = {
+            '@type': 'addProxy',
+            'server': self.proxy_server,
+            'port': self.proxy_port,
+            'enable': True,
+            'type': self.proxy_type,
+        }
+        return self._send_data(data, result_id='setProxy')
 
     def _send_bot_token(self) -> AsyncResult:
         logger.info('Sending bot token')

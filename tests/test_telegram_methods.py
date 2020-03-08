@@ -270,6 +270,7 @@ class TestTelegram:
                 'database_directory': f'/tmp/.tdlib_files/{phone_md5}/database',
                 'use_message_database': True,
                 'files_directory': f'/tmp/.tdlib_files/{phone_md5}/files',
+                'use_secret_chats': True,
             },
             '@extra': {'request_id': 'updateAuthorizationState'},
         }

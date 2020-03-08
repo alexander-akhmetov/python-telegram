@@ -8,6 +8,7 @@ Changelog
 - Proxy support (thanks to @h4x3rotab)
 - New methods: ``delete_messages``, ``get_supergroup_full_info``, ``create_basic_group_chat``. (thanks to @h4x3rotab)
 - Fix #67: fixed infinite waiting for a result during login or for an `ok` result type.
+- New Telegram initialization parameter: ``use_secret_chats`` (``True`` by default) (thanks to @DopeforHope)
 
 [0.11.0] - 2020-02-15
 

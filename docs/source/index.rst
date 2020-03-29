@@ -9,6 +9,7 @@ Welcome to python-telegram's documentation
    tutorial
    telegram
    tdlib
+   proxy
    changelog
 
 Client for the `tdlib <https://github.com/tdlib/td>`_ library (at very early stage :) ).

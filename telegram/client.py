@@ -6,8 +6,9 @@ import signal
 import typing
 import getpass
 import logging
+import base64
 import threading
-from typing import Any, Dict, List, Type, Callable, Optional, DefaultDict, Tuple
+from typing import Any, Dict, List, Type, Callable, Optional, DefaultDict, Tuple, Union
 from types import FrameType
 from collections import defaultdict
 
@@ -27,7 +28,7 @@ class Telegram:
         self,
         api_id: int,
         api_hash: str,
-        database_encryption_key: str,
+        database_encryption_key: Union[str, bytes],
         phone: Optional[str] = None,
         bot_token: Optional[str] = None,
         library_path: Optional[str] = None,
@@ -530,9 +531,14 @@ class Telegram:
 
     def _send_encryption_key(self) -> AsyncResult:
         logger.info('Sending encryption key')
+
+        key = self._database_encryption_key
+        if isinstance(key, str):
+            key = key.encode()
+
         data = {
             '@type': 'checkDatabaseEncryptionKey',
-            'encryption_key': self._database_encryption_key,
+            'encryption_key': base64.b64encode(key).decode(),
         }
 
         return self._send_data(data, result_id='updateAuthorizationState')

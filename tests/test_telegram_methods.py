@@ -17,13 +17,20 @@ DATABASE_ENCRYPTION_KEY = 'changeme1234'
 def telegram():
     with patch('telegram.client.TDJson'):
         with patch('telegram.client.threading'):
-            tg = Telegram(
-                api_id=API_ID,
-                api_hash=API_HASH,
-                phone=PHONE,
-                library_path=LIBRARY_PATH,
-                database_encryption_key=DATABASE_ENCRYPTION_KEY,
-            )
+            return _get_telegram_instance()
+
+
+def _get_telegram_instance(**kwargs):
+    kwargs.setdefault('api_id', API_ID)
+    kwargs.setdefault('api_hash', API_HASH)
+    kwargs.setdefault('phone', PHONE)
+    kwargs.setdefault('library_path', LIBRARY_PATH)
+    kwargs.setdefault('database_encryption_key', DATABASE_ENCRYPTION_KEY)
+
+    with patch('telegram.client.TDJson'):
+        with patch('telegram.client.threading'):
+            tg = Telegram(**kwargs)
+
     return tg
 
 
@@ -277,6 +284,25 @@ class TestTelegram:
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
         assert async_result.id == 'updateAuthorizationState'
+
+    @pytest.mark.parametrize(
+        'key, exp_key',
+        [('key', 'a2V5'), (b'byte-key', 'Ynl0ZS1rZXk='), ('', ''), (b'', '')],
+    )
+    def test_send_encryption_key(self, key, exp_key):
+        # check that _send_encryption_key calls tdlib with
+        # correct parameters encoded using base64
+        tg = _get_telegram_instance(database_encryption_key=key)
+
+        tg._send_encryption_key()
+
+        exp_data = {
+            '@type': 'checkDatabaseEncryptionKey',
+            'encryption_key': exp_key,
+            '@extra': {'request_id': 'updateAuthorizationState'},
+        }
+
+        tg._tdjson.send.assert_called_once_with(exp_data)
 
 
 class TestTelegram__update_async_result:

@@ -40,7 +40,7 @@ Check the [tutorial](http://python-telegram.readthedocs.io/en/latest/tutorial.ht
 Basic example:
 
 ```python
-    from telegram.client import Telegram
+    from python_telegram.client import Telegram
 
     tg = Telegram(
         api_id='api_id',

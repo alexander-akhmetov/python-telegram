@@ -11,7 +11,7 @@ Define proxy parameters and pass them to ``Telegram``:
 
 .. code-block:: python
 
-    from telegram.client import Telegram
+    from python_telegram.client import Telegram
 
     proxy_type = {
        '@type': 'proxyTypeMtproto',  # 'proxyTypeSocks5', 'proxyTypeHttp' 

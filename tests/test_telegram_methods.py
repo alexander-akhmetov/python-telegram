@@ -2,9 +2,9 @@ import pytest
 
 from unittest.mock import patch
 
-from telegram import VERSION
-from telegram.utils import AsyncResult
-from telegram.client import Telegram, MESSAGE_HANDLER_TYPE
+from python_telegram import VERSION
+from python_telegram.utils import AsyncResult
+from python_telegram.client import Telegram, MESSAGE_HANDLER_TYPE
 
 API_ID = 1
 API_HASH = 'hash'
@@ -49,7 +49,7 @@ class TestTelegram:
         chat_id = 1
         text = 'Hello world'
 
-        async_result = telegram.send_message(chat_id=chat_id, text=text)
+        async_result = python_telegram.send_message(chat_id=chat_id, text=text)
 
         exp_data = {
             '@type': 'sendMessage',
@@ -75,7 +75,7 @@ class TestTelegram:
             telegram._send_phone_number_or_bot_token()
 
             telegram._send_phone_number.assert_called_once()
-            assert telegram._send_bot_token.call_count == 0
+            assert python_telegram._send_bot_token.call_count == 0
 
             telegram.phone = None
             telegram.bot_token = 'some-token'
@@ -97,18 +97,18 @@ class TestTelegram:
     def test_add_message_handler(self, telegram):
         # check that add_message_handler
         # appends passed function to _update_handlers[MESSAGE_HANDLER_TYPE] list
-        assert telegram._update_handlers[MESSAGE_HANDLER_TYPE] == []
+        assert python_telegram._update_handlers[MESSAGE_HANDLER_TYPE] == []
 
         def my_handler():
             pass
 
         telegram.add_message_handler(my_handler)
 
-        assert telegram._update_handlers[MESSAGE_HANDLER_TYPE] == [my_handler]
+        assert python_telegram._update_handlers[MESSAGE_HANDLER_TYPE] == [my_handler]
 
     def test_remove_update_handler(self, telegram):
         # check remove_update_handler
-        assert telegram._update_handlers[MESSAGE_HANDLER_TYPE] == []
+        assert python_telegram._update_handlers[MESSAGE_HANDLER_TYPE] == []
 
         def my_handler():
             pass
@@ -117,7 +117,7 @@ class TestTelegram:
 
         telegram.remove_update_handler(MESSAGE_HANDLER_TYPE, my_handler)
 
-        assert telegram._update_handlers[MESSAGE_HANDLER_TYPE] == []
+        assert python_telegram._update_handlers[MESSAGE_HANDLER_TYPE] == []
 
     def test_remove_update_handler_empty_handlers_list(self, telegram):
         telegram._update_handlers = {}
@@ -127,20 +127,20 @@ class TestTelegram:
 
         telegram.remove_update_handler(MESSAGE_HANDLER_TYPE, my_handler)
 
-        assert telegram._update_handlers == {}
+        assert python_telegram._update_handlers == {}
 
     def test_add_update_handler(self, telegram):
         # check that add_update_handler function
         # appends passsed func to _update_handlers[type] list
         my_update_type = 'update'
-        assert telegram._update_handlers[my_update_type] == []
+        assert python_telegram._update_handlers[my_update_type] == []
 
         def my_handler():
             pass
 
         telegram.add_update_handler(my_update_type, my_handler)
 
-        assert telegram._update_handlers[my_update_type] == [my_handler]
+        assert python_telegram._update_handlers[my_update_type] == [my_handler]
 
     def test_run_handlers(self, telegram):
         def my_handler():
@@ -170,7 +170,7 @@ class TestTelegram:
         method_name = 'someMethod'
         params = {'param_1': 'value_1', 'param_2': 2}
 
-        async_result = telegram.call_method(method_name=method_name, params=params)
+        async_result = python_telegram.call_method(method_name=method_name, params=params)
 
         exp_data = {'@type': method_name, '@extra': {'request_id': async_result.id}}
         exp_data.update(params)
@@ -181,7 +181,7 @@ class TestTelegram:
         url = 'https://yandex.ru/'
         force_full = False
 
-        async_result = telegram.get_web_page_instant_view(
+        async_result = python_telegram.get_web_page_instant_view(
             url=url, force_full=force_full
         )
 
@@ -195,7 +195,7 @@ class TestTelegram:
         telegram._tdjson.send.assert_called_once_with(exp_data)
 
     def test_get_me(self, telegram):
-        async_result = telegram.get_me()
+        async_result = python_telegram.get_me()
 
         exp_data = {'@type': 'getMe', '@extra': {'request_id': async_result.id}}
 
@@ -204,7 +204,7 @@ class TestTelegram:
     def test_get_chat(self, telegram):
         chat_id = 1
 
-        async_result = telegram.get_chat(chat_id=chat_id)
+        async_result = python_telegram.get_chat(chat_id=chat_id)
 
         exp_data = {
             '@type': 'getChat',
@@ -219,7 +219,7 @@ class TestTelegram:
         offset_chat_id = 1
         limit = 100
 
-        async_result = telegram.get_chats(
+        async_result = python_telegram.get_chats(
             offset_order=offset_order, offset_chat_id=offset_chat_id, limit=limit
         )
 
@@ -240,7 +240,7 @@ class TestTelegram:
         offset = 0
         only_local = False
 
-        async_result = telegram.get_chat_history(
+        async_result = python_telegram.get_chat_history(
             chat_id=chat_id,
             limit=limit,
             from_message_id=from_message_id,
@@ -261,7 +261,7 @@ class TestTelegram:
         telegram._tdjson.send.assert_called_once_with(exp_data)
 
     def test_set_initial_params(self, telegram):
-        async_result = telegram._set_initial_params()
+        async_result = python_telegram._set_initial_params()
         phone_md5 = '69560384b84c896952ef20352fbce705'
 
         exp_data = {
@@ -307,14 +307,14 @@ class TestTelegram:
 
 class TestTelegram__update_async_result:
     def test_update_async_result_returns_async_result_with_same_id(self, telegram):
-        assert telegram._results == {}
+        assert python_telegram._results == {}
 
-        async_result = telegram._send_data(data={})
+        async_result = python_telegram._send_data(data={})
 
-        assert async_result.id in telegram._results
+        assert async_result.id in python_telegram._results
 
         update = {'@extra': {'request_id': async_result.id}}
-        new_async_result = telegram._update_async_result(update=update)
+        new_async_result = python_telegram._update_async_result(update=update)
 
         assert async_result == new_async_result
 
@@ -328,7 +328,7 @@ class TestTelegram__update_async_result:
             '@type': 'updateAuthorizationState',
             '@extra': {'request_id': 'blablabla'},
         }
-        new_async_result = telegram._update_async_result(update=update)
+        new_async_result = python_telegram._update_async_result(update=update)
 
         assert new_async_result.id == 'updateAuthorizationState'
 
@@ -338,7 +338,7 @@ class TestTelegram__login:
         telegram._authorized = True
         telegram.login()
 
-        assert telegram._tdjson.send.call_count == 0
+        assert python_telegram._tdjson.send.call_count == 0
 
     def test_login_process_with_phone(self, telegram):
         telegram._authorized = False
@@ -378,4 +378,4 @@ class TestTelegram__login:
 
         telegram.login()
 
-        assert telegram._tdjson.send.call_count == 0
+        assert python_telegram._tdjson.send.call_count == 0

@@ -15,11 +15,11 @@ Install the library:
 
 Let's create a simple echo-bot, which sends "pong" when it receives "ping".
 
-Initialize a new telegram client with your credentials:
+Initialize a new python_telegram client with your credentials:
 
 .. code-block:: python
 
-    from telegram.client import Telegram
+    from python_telegram.client import Telegram
 
     tg = Telegram(
         api_id='api_id',
@@ -85,7 +85,7 @@ Full code of our new bot:
 
 .. code-block:: python
 
-    from telegram.client import Telegram
+    from python_telegram.client import Telegram
 
     tg = Telegram(
         api_id='api_id',

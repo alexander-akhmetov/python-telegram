@@ -12,10 +12,10 @@ from typing import Any, Dict, List, Type, Callable, Optional, DefaultDict, Tuple
 from types import FrameType
 from collections import defaultdict
 
-from telegram import VERSION
-from telegram.utils import AsyncResult
-from telegram.tdjson import TDJson
-from telegram.worker import BaseWorker, SimpleWorker
+from python_telegram import VERSION
+from python_telegram.utils import AsyncResult
+from python_telegram.tdjson import TDJson
+from python_telegram.worker import BaseWorker, SimpleWorker
 
 logger = logging.getLogger(__name__)
 

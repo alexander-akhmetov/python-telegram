@@ -1,6 +1,6 @@
 from unittest.mock import Mock, patch
 
-from telegram.tdjson import _get_tdjson_lib_path
+from python_telegram.tdjson import _get_tdjson_lib_path
 
 
 class TestGetTdjsonTdlibPath:

@@ -1,6 +1,6 @@
 import argparse
 
-from telegram.client import Telegram
+from python_telegram.client import Telegram
 
 
 def bot_get_me(api_id, api_hash, token):

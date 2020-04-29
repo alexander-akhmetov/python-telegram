@@ -4,7 +4,7 @@ import argparse
 from collections import Counter
 
 from utils import setup_logging
-from telegram.client import Telegram
+from python_telegram.client import Telegram
 
 
 """
@@ -21,7 +21,7 @@ def retreive_messages(telegram, chat_id, receive_limit):
     stats_data = {}
 
     while receive:
-        response = telegram.get_chat_history(
+        response = python_telegram.get_chat_history(
             chat_id=chat_id,
             limit=1000,
             from_message_id=from_message_id,

@@ -12,7 +12,7 @@ def get_version(package):
     return re.match("__version__ = ['\"]([^'\"]+)['\"]", init_py).group(1)
 
 
-version = get_version('telegram')
+version = get_version('python_telegram')
 
 
 setup(
@@ -23,10 +23,10 @@ setup(
     author_email='me@aleks.sh',
     url='https://github.com/alexander-akhmetov/python-telegram',
     packages=[
-        'telegram',
+        'python_telegram',
     ],
     package_data={
-        'telegram': [
+        'python_telegram': [
             'lib/darwin/*',
             'lib/linux/*',
         ],

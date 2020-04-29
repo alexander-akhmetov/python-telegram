@@ -4,7 +4,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
-    from telegram.client import Telegram  # noqa  pylint: disable=cyclic-import
+    from python_telegram.client import Telegram  # noqa  pylint: disable=cyclic-import
 
 
 logger = logging.getLogger(__name__)

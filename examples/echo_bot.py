@@ -2,7 +2,7 @@ import logging
 import argparse
 
 from utils import setup_logging
-from telegram.client import Telegram
+from python_telegram.client import Telegram
 
 """
 It answers "pong" if receives "ping"

@@ -2,7 +2,7 @@ import pytest
 
 from unittest.mock import Mock, patch
 
-from telegram.utils import AsyncResult
+from python_telegram.utils import AsyncResult
 
 
 class TestAsyncResult:

@@ -7,7 +7,7 @@ Submodules
 telegram.client module
 ----------------------
 
-.. automodule:: telegram.client
+.. automodule:: python_telegram.client
     :members:
     :undoc-members:
     :show-inheritance:
@@ -15,7 +15,7 @@ telegram.client module
 telegram.tdjson module
 ----------------------
 
-.. automodule:: telegram.tdjson
+.. automodule:: python_telegram.tdjson
     :members:
     :undoc-members:
     :show-inheritance:
@@ -23,7 +23,7 @@ telegram.tdjson module
 telegram.utils module
 ---------------------
 
-.. automodule:: telegram.utils
+.. automodule:: python_telegram.utils
     :members:
     :undoc-members:
     :show-inheritance:
@@ -31,7 +31,7 @@ telegram.utils module
 telegram.worker module
 ----------------------
 
-.. automodule:: telegram.worker
+.. automodule:: python_telegram.worker
     :members:
     :undoc-members:
     :show-inheritance:

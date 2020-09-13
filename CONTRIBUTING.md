@@ -26,3 +26,19 @@ some sample code.
 
 The project uses [black](https://github.com/psf/black) as a autoformatter tool
 and checker and a few linters.
+
+## Tests
+
+To run tests you have to install [tox](https://tox.readthedocs.io/en/latest/).
+
+Run tests:
+
+```shell
+tox
+```
+
+Run a specific test using python 3.7:
+
+```shell
+tox -e py37 -- -k test_add_message_handler
+```

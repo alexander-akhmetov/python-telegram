@@ -14,7 +14,7 @@ It helps you build your own Telegram clients.
 
 ## Installation
 
-This library works with Python 3.6+ only.
+This library requires Python 3.6+ and Linux or MacOS.
 
 ```shell
 pip install python-telegram
@@ -24,7 +24,7 @@ See [documentation](http://python-telegram.readthedocs.io/en/latest/#installatio
 
 ### Docker
 
-This library has [docker image](https://hub.docker.com/r/akhmetov/python-telegram/):
+This library has a [docker image](https://hub.docker.com/r/akhmetov/python-telegram/):
 
 ```sh
 docker run -i -t --rm \
@@ -35,7 +35,7 @@ docker run -i -t --rm \
 
 ## How to use
 
-Check the [tutorial](http://python-telegram.readthedocs.io/en/latest/tutorial.html) :)
+Have a look at the [tutorial](http://python-telegram.readthedocs.io/en/latest/tutorial.html) :)
 
 Basic example:
 
@@ -73,18 +73,4 @@ More information in the [documentation](http://python-telegram.readthedocs.io).
 
 ## Development
 
-### Tests
-
-To run tests you need to install [tox](https://tox.readthedocs.io/en/latest/) first.
-
-Start tests:
-
-```shell
-tox
-```
-
-Run a specific test for python3.7:
-
-```shell
-tox -e py37 -- tests/test_telegram_methods.py::TestTelegram::test_add_message_handler
-```
+See [CONTRIBUTING.md](/CONTRIBUTING.md).

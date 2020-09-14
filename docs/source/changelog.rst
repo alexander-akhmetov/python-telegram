@@ -2,6 +2,10 @@
 Changelog
 =========
 
+[unreleased]
+
+- Non-blocking login, see ``examples/get_me_non_blocking_login.py`` (thanks to @melfnt).
+
 [0.12.0] - 2020-03-29
 
 - New example: ``examples/clear_group_messages.py`` (thanks to @h4x3rotab)

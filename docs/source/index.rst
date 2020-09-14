@@ -7,6 +7,7 @@ Welcome to python-telegram's documentation
    :maxdepth: 1
 
    tutorial
+   non_blocking_login
    telegram
    tdlib
    proxy

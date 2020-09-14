@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from telegram import VERSION
 from telegram.utils import AsyncResult
-from telegram.client import Telegram, MESSAGE_HANDLER_TYPE
+from telegram.client import Telegram, MESSAGE_HANDLER_TYPE, AuthorizationState
 
 API_ID = 1
 API_HASH = 'hash'
@@ -335,13 +335,13 @@ class TestTelegram__update_async_result:
 
 class TestTelegram__login:
     def test_login_process_should_do_nothing_if_already_authorized(self, telegram):
-        telegram._authorized = True
+        telegram.authorization_state = AuthorizationState.READY
         telegram.login()
 
         assert telegram._tdjson.send.call_count == 0
 
     def test_login_process_with_phone(self, telegram):
-        telegram._authorized = False
+        telegram.authorization_state = AuthorizationState.NONE
 
         def _get_async_result(data, request_id=None):
             result = AsyncResult(client=telegram)
@@ -354,7 +354,7 @@ class TestTelegram__login:
 
         # login process chain
         telegram.get_authorization_state = lambda: _get_async_result(
-            data={'@type': 'authorizationStateWaitEncryptionKey'},
+            data={'@type': 'authorizationStateWaitTdlibParameters'},
             request_id='getAuthorizationState',
         )
 
@@ -377,5 +377,56 @@ class TestTelegram__login:
         )
 
         telegram.login()
+
+        assert telegram._tdjson.send.call_count == 0
+
+
+class TestTelegram__login_non_blocking:
+    def test_login_process_with_phone(self, telegram):
+        telegram.authorization_state = AuthorizationState.NONE
+
+        def _get_async_result(data, request_id=None):
+            result = AsyncResult(client=telegram)
+
+            result.update = data
+            result._ready.set()
+            result.id = request_id
+
+            return result
+
+        # login process chain
+        telegram.get_authorization_state = lambda: _get_async_result(
+            data={'@type': 'authorizationStateWaitTdlibParameters'},
+            request_id='getAuthorizationState',
+        )
+
+        telegram._set_initial_params = lambda: _get_async_result(
+            data={
+                'authorization_state': {'@type': 'authorizationStateWaitEncryptionKey'}
+            }
+        )
+        telegram._send_encryption_key = lambda: _get_async_result(
+            data={'authorization_state': {'@type': 'authorizationStateWaitPhoneNumber'}}
+        )
+        telegram._send_phone_number_or_bot_token = lambda: _get_async_result(
+            data={'authorization_state': {'@type': 'authorizationStateWaitCode'}}
+        )
+        telegram._send_telegram_code = lambda _: _get_async_result(
+            data={'authorization_state': {'@type': 'authorizationStateWaitPassword'}}
+        )
+        telegram._send_password = lambda _: _get_async_result(
+            data={'authorization_state': {'@type': 'authorizationStateReady'}}
+        )
+
+        state = telegram.login(blocking=False)
+        assert state == AuthorizationState.WAIT_CODE
+        telegram.send_code('123')
+
+        state = telegram.login(blocking=False)
+        assert state == AuthorizationState.WAIT_PASSWORD
+        telegram.send_password('456')
+
+        state = telegram.login(blocking=False)
+        assert state == telegram.authorization_state == AuthorizationState.READY
 
         assert telegram._tdjson.send.call_count == 0

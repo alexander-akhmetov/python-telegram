@@ -1,9 +1,12 @@
 import argparse
+from pprint import pprint
 
 from telegram.client import Telegram
+
 import utils
 
-if __name__ == '__main__':
+
+def main():
     utils.setup_logging()
 
     parser = argparse.ArgumentParser()
@@ -25,4 +28,8 @@ if __name__ == '__main__':
 
     result = tg.get_me()
     result.wait()
-    print(result.update)
+    pprint(result.update)
+
+
+if __name__ == '__main__':
+    main()

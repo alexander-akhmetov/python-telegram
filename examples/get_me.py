@@ -19,9 +19,7 @@ def main():
         api_hash=args.api_hash,
         phone=args.phone,
         database_encryption_key='changeme1234',
-        proxy_server=args.proxy_server,
-        proxy_port=args.proxy_port,
-        proxy_type=utils.parse_proxy_type(args)
+        proxy=utils.parse_proxy_type(args),
     )
     # you must call login method before others
     tg.login()

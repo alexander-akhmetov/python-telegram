@@ -8,10 +8,12 @@ import utils
 
 logger = logging.getLogger(__name__)
 
+
 def confirm(message):
     sure = input(message + ' ')
     if sure.lower() not in ['y', 'yes']:
         exit(0)
+
 
 def dump_my_msgs(tg, chat_id):
     msg_id = 0
@@ -20,7 +22,9 @@ def dump_my_msgs(tg, chat_id):
     all_mine = []
     last_timestamp = 0
     while True:
-        last_date = '' if last_timestamp == 0 else str(datetime.fromtimestamp(last_timestamp))
+        last_date = (
+            '' if last_timestamp == 0 else str(datetime.fromtimestamp(last_timestamp))
+        )
         print(f'.. Fetching {num_my_msgs}/{num_msgs} msgs @{msg_id} {last_date}')
         r = tg.get_chat_history(chat_id, 1000, msg_id)
         r.wait()
@@ -43,12 +47,13 @@ def dump_my_msgs(tg, chat_id):
 
 
 def delete_messages(chat_id, message_ids):
-    BATCH=20
+    BATCH = 20
     num = len(message_ids)
     for i in range(0, num, BATCH):
         print(f'.. Deleting {i}-{i+BATCH-1} / {num}...')
-        r = tg.delete_messages(chat_id, message_ids[i:i+BATCH], revoke=True)
+        r = tg.delete_messages(chat_id, message_ids[i : i + BATCH], revoke=True)
         r.wait(raise_exc=True)
+
 
 if __name__ == '__main__':
     utils.setup_logging()
@@ -63,9 +68,7 @@ if __name__ == '__main__':
         api_hash=args.api_hash,
         phone=args.phone,
         database_encryption_key='changeme1234',
-        proxy_server=args.proxy_server,
-        proxy_port=args.proxy_port,
-        proxy_type=utils.parse_proxy_type(args)
+        proxy=utils.parse_proxy_type(args),
     )
     # you must call login method before others
     tg.login()

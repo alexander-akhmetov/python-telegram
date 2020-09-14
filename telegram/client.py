@@ -17,6 +17,7 @@ from telegram import VERSION
 from telegram.utils import AsyncResult
 from telegram.tdjson import TDJson
 from telegram.worker import BaseWorker, SimpleWorker
+from telegram.proxy import BaseProxy
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +55,7 @@ class Telegram:
         login: bool = False,
         default_workers_queue_size: int = 1000,
         tdlib_verbosity: int = 2,
-        proxy_server: str = '',
-        proxy_port: int = 0,
-        proxy_type: Optional[Dict[str, str]] = None,
+        proxy: Optional[BaseProxy] = None,
         use_secret_chats: bool = True,
     ) -> None:
         """
@@ -87,9 +86,7 @@ class Telegram:
         self.application_version = application_version
         self.use_message_database = use_message_database
         self._queue_put_timeout = 10
-        self.proxy_server = proxy_server
-        self.proxy_port = proxy_port
-        self.proxy_type = proxy_type
+        self.proxy = proxy
         self.use_secret_chats = use_secret_chats
         self.authorization_state = AuthorizationState.NONE
 
@@ -513,13 +510,8 @@ class Telegram:
            to the end user and then call send_password(password)
          - AuthorizationState.READY if the login process scceeded.
         """
-        if self.proxy_server:
-            self._send_add_proxy()
 
-        actions: Dict[
-            AuthorizationState,
-            Callable[[], AsyncResult],
-        ] = {
+        actions: Dict[AuthorizationState, Callable[[], AsyncResult]] = {
             AuthorizationState.NONE: self.get_authorization_state,
             AuthorizationState.WAIT_TDLIB_PARAMETERS: self._set_initial_params,
             AuthorizationState.WAIT_ENCRYPTION_KEY: self._send_encryption_key,
@@ -551,6 +543,15 @@ class Telegram:
                 self.authorization_state = self._wait_authorization_result(result)
             else:
                 self.authorization_state = result
+
+            # right after sending database encryption key,
+            # we can set proxy
+            # todo: don't do it twice
+            if self.authorization_state in (
+                AuthorizationState.WAIT_PHONE_NUMBER,
+                AuthorizationState.READY,
+            ):
+                self._send_add_proxy_if_set()
 
         return self.authorization_state
 
@@ -614,16 +615,18 @@ class Telegram:
 
         return self._send_data(data, result_id='updateAuthorizationState')
 
-    def _send_add_proxy(self) -> AsyncResult:
-        logger.info('Sending addProxy')
-        data = {
-            '@type': 'addProxy',
-            'server': self.proxy_server,
-            'port': self.proxy_port,
-            'enable': True,
-            'type': self.proxy_type,
-        }
-        return self._send_data(data, result_id='setProxy')
+    def _send_add_proxy_if_set(self) -> None:
+        if self.proxy:
+            logger.info('Sending addProxy')
+
+            data = {
+                '@type': 'addProxy',
+                'server': self.proxy.server,
+                'port': self.proxy.port,
+                'enable': True,
+                'type': self.proxy.get_type_object(),
+            }
+            self._send_data(data, result_id='addProxy', block=True)
 
     def _send_bot_token(self) -> AsyncResult:
         logger.info('Sending bot token')

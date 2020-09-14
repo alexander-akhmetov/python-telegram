@@ -4,7 +4,8 @@ Changelog
 
 [unreleased]
 
-- Non-blocking login, see ``examples/get_me_non_blocking_login.py`` (thanks to @melfnt).
+- Non-blocking login, see ``examples/get_me_non_blocking_login.py`` and :ref:`non_blocking_login` ,a (thanks to @melfnt).
+- Proxy support changes: a new class has been added: ``telegram.proxy.Proxy``. See :ref:`proxy` for details.
 
 [0.12.0] - 2020-03-29
 

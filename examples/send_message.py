@@ -55,3 +55,5 @@ if __name__ == '__main__':
         print(f'send message error: {result.error_info}')
     else:
         print(f'message has been sent: {result.update}')
+
+    tg.stop()

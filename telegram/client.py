@@ -8,7 +8,10 @@ import getpass
 import logging
 import base64
 import threading
-from typing import Any, Dict, List, Type, Callable, Optional, DefaultDict, Tuple, Union
+from typing import (
+    Any, Dict, List, Type, Callable,
+    Optional, DefaultDict, Union, Tuple,
+)
 from types import FrameType
 from collections import defaultdict
 import enum
@@ -32,6 +35,8 @@ class AuthorizationState(enum.Enum):
     WAIT_ENCRYPTION_KEY = 'authorizationStateWaitEncryptionKey'
     WAIT_PHONE_NUMBER = 'authorizationStateWaitPhoneNumber'
     READY = 'authorizationStateReady'
+    CLOSING = 'authorizationStateClosing'
+    CLOSED = 'authorizationStateClosed'
 
 
 class Telegram:
@@ -108,7 +113,7 @@ class Telegram:
         self.files_directory = files_directory
 
         self._authorized = False
-        self._is_enabled = False
+        self._stopped = threading.Event()
 
         # todo: move to worker
         self._workers_queue: queue.Queue = queue.Queue(
@@ -117,7 +122,7 @@ class Telegram:
 
         if not worker:
             worker = SimpleWorker
-        self.worker = worker(queue=self._workers_queue)
+        self.worker: BaseWorker = worker(queue=self._workers_queue)
 
         self._results: Dict[str, AsyncResult] = {}
         self._update_handlers: DefaultDict[str, List[Callable]] = defaultdict(list)
@@ -128,15 +133,35 @@ class Telegram:
         if login:
             self.login()
 
-    def __del__(self) -> None:
-        self.stop()
-
     def stop(self) -> None:
         """Stops the client"""
-        self._is_enabled = False
+        if self._stopped.is_set():
+            return
+
+        logger.info('Stopping telegram client...')
+
+        self._close()
+        self.worker.stop()
+        self._stopped.set()
+
+        # wait for the tdjson listener to stop
+        self._td_listener.join()
 
         if hasattr(self, '_tdjson'):
             self._tdjson.stop()
+
+    def _close(self) -> None:
+        """
+        Calls `close` tdlib method and waits until authorization_state becomes CLOSED.
+        Blocking.
+        """
+        self.call_method('close')
+
+        while self.authorization_state != AuthorizationState.CLOSED:
+            result = self.get_authorization_state()
+            self.authorization_state = self._wait_authorization_result(result)
+            logger.info('Authorization state: %s', self.authorization_state)
+            time.sleep(0.5)
 
     def send_message(self, chat_id: int, text: str) -> AsyncResult:
         """
@@ -355,8 +380,6 @@ class Telegram:
         return self._send_data(data, block=block)
 
     def _run(self) -> None:
-        self._is_enabled = True
-
         self._td_listener = threading.Thread(target=self._listen_to_td)
         self._td_listener.daemon = True
         self._td_listener.start()
@@ -366,7 +389,7 @@ class Telegram:
     def _listen_to_td(self) -> None:
         logger.info('[Telegram.td_listener] started')
 
-        while self._is_enabled:
+        while not self._stopped.is_set():
             update = self._tdjson.receive()
 
             if update:
@@ -454,20 +477,20 @@ class Telegram:
         return async_result
 
     def idle(
-        self, stop_signals: Tuple = (signal.SIGINT, signal.SIGTERM, signal.SIGABRT)
+        self, stop_signals: Tuple = (signal.SIGINT, signal.SIGTERM, signal.SIGABRT, signal.SIGQUIT)
     ) -> None:
-        """Blocks until one of the signals are received and stops"""
-
+        """
+        Blocks until one of the exit signals is received.
+        When a signal is received, calls `stop`.
+        """
         for sig in stop_signals:
-            signal.signal(sig, self._signal_handler)
+            signal.signal(sig, self._stop_signal_handler)
 
-        self._is_enabled = True
+        self._stopped.wait()
 
-        while self._is_enabled:
-            time.sleep(0.1)
-
-    def _signal_handler(self, signum: int, frame: FrameType) -> None:
-        self._is_enabled = False
+    def _stop_signal_handler(self, signum: int, frame: FrameType) -> None:
+        logger.info('Signal %s received!', signum)
+        self.stop()
 
     def get_authorization_state(self) -> AsyncResult:
         logger.debug('Getting authorization state')

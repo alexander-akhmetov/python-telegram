@@ -30,6 +30,8 @@ def main():
     result.wait()
     pprint(result.update)
 
+    tg.stop()
+
 
 if __name__ == '__main__':
     main()

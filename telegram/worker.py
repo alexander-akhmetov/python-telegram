@@ -1,6 +1,7 @@
 import logging
 import threading
-from queue import Queue
+from queue import Queue, Empty
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,9 @@ class BaseWorker:
     def run(self) -> None:
         raise NotImplementedError()
 
+    def stop(self) -> None:
+        raise NotImplementedError()
+
 
 class SimpleWorker(BaseWorker):
     """Simple one-thread worker"""
@@ -34,6 +38,14 @@ class SimpleWorker(BaseWorker):
         logger.info('[SimpleWorker] started')
 
         while self._is_enabled:
-            handler, update = self._queue.get()
+            try:
+                handler, update = self._queue.get(timeout=0.5)
+            except Empty:
+                continue
+
             handler(update)
             self._queue.task_done()
+
+    def stop(self) -> None:
+        self._is_enabled = False
+        self._thread.join()

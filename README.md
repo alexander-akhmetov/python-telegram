@@ -63,6 +63,8 @@ Basic example:
     # You can receive a result with the `wait` method of this object.
     result.wait()
     print(result.update)
+    
+    tg.stop()  # you must call `stop` at the end of the script
 ```
 
 More examples you can find in the [/examples/ directory](/examples/).

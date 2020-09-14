@@ -5,6 +5,7 @@ Changelog
 [unreleased]
 
 - Non-blocking login, see ``examples/get_me_non_blocking_login.py`` (thanks to @melfnt).
+- Better stop. python-teleram calls `close` and waits until tdlib is closed.
 
 [0.12.0] - 2020-03-29
 

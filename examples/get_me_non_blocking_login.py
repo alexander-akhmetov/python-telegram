@@ -46,3 +46,5 @@ if __name__ == '__main__':
     result.wait()
 
     pprint(result.update)
+
+    tg.stop()

@@ -86,3 +86,5 @@ if __name__ == '__main__':
         stats_data=stats_data,
         most_common_count=args.most_common,
     )
+
+    tg.stop()

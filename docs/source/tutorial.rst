@@ -112,3 +112,11 @@ Full code of our new bot:
     tg.idle()
 
 Done! You have created your first client for the Telegram Messenger.
+
+idle and stop
+-------------
+
+You must call `stop` to properly stop python-telegram and tdlib.
+It calls tdlib's `close` method and waits until it's finished.
+
+When you use `idle`, it automatically waits until you call `stop` in another thread, or one of the stop signals is received.

@@ -44,3 +44,5 @@ if __name__ == '__main__':
         print('Instant view: ')
         short_text = result.update['page_blocks'][0]['title']['text']
         print(f'\n    {short_text}')
+
+    tg.stop()

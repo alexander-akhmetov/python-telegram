@@ -115,38 +115,55 @@ class Telegram:
 
         if hasattr(self, '_tdjson'):
             self._tdjson.stop()
-
-    def send_message(self, chat_id: int, text: str) -> AsyncResult:
-        """
-        Sends a message to a chat. The chat must be in the tdlib's database.
-        If there is no chat in the DB, tdlib returns an error.
-        Chat is being saved to the database when the client receives a message or when you call the `get_chats` method.
-
-        Args:
-            chat_id
-            text
-
-        Returns:
-            AsyncResult
-            The update will be:
-                {
-                    '@type': 'message',
-                    'id': 1,
-                    'sender_user_id': 2,
-                    'chat_id': 3,
-                    ...
-                }
-        """
-        data = {
-            '@type': 'sendMessage',
-            'chat_id': chat_id,
-            'input_message_content': {
-                '@type': 'inputMessageText',
-                'text': {'@type': 'formattedText', 'text': text},
-            },
-        }
-
-        return self._send_data(data)
+	def delete_message_from_user(self,chat_id,user_id):
+		data = {
+			"@type":"deleteChatMessagesFromUser",
+			"chat_id": chat_id,
+			"user_id": user_id
+		}
+		return self._send_data(data)
+	def delete_message(self,chat_id,msg_id):
+		data = {
+			"@type": "deleteMessages",
+			"chat_id": chat_id,
+			"message_ids": msg_id, #list such as [1,2,3,4,...]
+		}
+		return self._send_data(data) 
+	def viewMessages(self,chat_id,message_ids):
+		data = {
+			"@type":"viewMessages",
+			"chat_id": chat_id,
+			"message_ids":message_ids,
+			"force_read":True,
+		}
+		return self._send_data(data)
+	def resolve_username(self,username)  -> AsyncResult:
+		data = {
+			"@type": "searchPublicChat",
+			"username": username,
+		}
+		return self._send_data(data)
+	def send_message(self, chat_id: int , text: str, reply_to_message_id:int = 0, parse_mode: str = None,disable_notification: bool = False, from_background: bool = False, disable_web_page_preview: bool = False, action: bool = True) -> AsyncResult:
+		if action == True:
+			self.send_action(chat_id,"Typing",len(text))
+		data = {
+			'@type': 'sendMessage',
+			'chat_id': chat_id,
+			'reply_to_message_id': reply_to_message_id,
+			'disable_notification': disable_notification,
+			'from_background': from_background,
+			'input_message_content': {
+				'@type': 'inputMessageText',
+				'text': {
+					'@type': 'formattedText',
+					'text': text,
+					'disable_web_page_preview': disable_web_page_preview,
+					'parse_mode': parse_mode,
+				},
+			},
+		}
+		
+		return self._send_data(data)
 
     def get_chat(self, chat_id: int) -> AsyncResult:
         """

@@ -2,6 +2,10 @@
 Changelog
 =========
 
+[0.14.0] - 2020-12-17
+
+- tdlib v1.7.0
+
 [0.13.0] - 2020-11-16
 
 - Non-blocking login, see ``examples/get_me_non_blocking_login.py`` (thanks to @melfnt).

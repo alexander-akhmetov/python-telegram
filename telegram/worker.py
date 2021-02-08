@@ -28,9 +28,7 @@ class SimpleWorker(BaseWorker):
     """Simple one-thread worker"""
 
     def run(self) -> None:
-        self._thread = threading.Thread(  # pylint: disable=attribute-defined-outside-init
-            target=self._run_thread
-        )
+        self._thread = threading.Thread(target=self._run_thread)  # pylint: disable=attribute-defined-outside-init
         self._thread.daemon = True
         self._thread.start()
 

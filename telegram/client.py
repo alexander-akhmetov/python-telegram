@@ -9,8 +9,15 @@ import logging
 import base64
 import threading
 from typing import (
-    Any, Dict, List, Type, Callable,
-    Optional, DefaultDict, Union, Tuple,
+    Any,
+    Dict,
+    List,
+    Type,
+    Callable,
+    Optional,
+    DefaultDict,
+    Union,
+    Tuple,
 )
 from types import FrameType
 from collections import defaultdict
@@ -116,9 +123,7 @@ class Telegram:
         self._stopped = threading.Event()
 
         # todo: move to worker
-        self._workers_queue: queue.Queue = queue.Queue(
-            maxsize=default_workers_queue_size
-        )
+        self._workers_queue: queue.Queue = queue.Queue(maxsize=default_workers_queue_size)
 
         if not worker:
             worker = SimpleWorker
@@ -222,9 +227,7 @@ class Telegram:
 
         return self.call_method('getUser', params={'user_id': user_id})
 
-    def get_chats(
-        self, offset_order: int = 0, offset_chat_id: int = 0, limit: int = 100
-    ) -> AsyncResult:
+    def get_chats(self, offset_order: int = 0, offset_chat_id: int = 0, limit: int = 100) -> AsyncResult:
         """
         Returns a list of chats:
 
@@ -275,7 +278,11 @@ class Telegram:
 
         return self._send_data(data)
 
-    def get_message(self, chat_id: int, message_id: int,) -> AsyncResult:
+    def get_message(
+        self,
+        chat_id: int,
+        message_id: int,
+    ) -> AsyncResult:
         """
         Return a message via its message_id
 
@@ -302,9 +309,7 @@ class Telegram:
         }
         return self._send_data(data)
 
-    def delete_messages(
-        self, chat_id: int, message_ids: List[int], revoke: bool = True
-    ) -> AsyncResult:
+    def delete_messages(self, chat_id: int, message_ids: List[int], revoke: bool = True) -> AsyncResult:
         """
         Delete a list of messages in a chat
 
@@ -329,9 +334,7 @@ class Telegram:
         Args:
             supergroup_id
         """
-        return self._send_data(
-            {'@type': 'getSupergroupFullInfo', 'supergroup_id': supergroup_id}
-        )
+        return self._send_data({'@type': 'getSupergroupFullInfo', 'supergroup_id': supergroup_id})
 
     def create_basic_group_chat(self, basic_group_id: int) -> AsyncResult:
         """
@@ -340,13 +343,9 @@ class Telegram:
         Args:
             basic_group_id
         """
-        return self._send_data(
-            {'@type': 'createBasicGroupChat', 'basic_group_id': basic_group_id}
-        )
+        return self._send_data({'@type': 'createBasicGroupChat', 'basic_group_id': basic_group_id})
 
-    def get_web_page_instant_view(
-        self, url: str, force_full: bool = False
-    ) -> AsyncResult:
+    def get_web_page_instant_view(self, url: str, force_full: bool = False) -> AsyncResult:
         """
         Use this method to request instant preview of a webpage.
         Returns error with 404 if there is no preview for this webpage.
@@ -396,14 +395,10 @@ class Telegram:
                 self._update_async_result(update)
                 self._run_handlers(update)
 
-    def _update_async_result(
-        self, update: Dict[Any, Any]
-    ) -> typing.Optional[AsyncResult]:
+    def _update_async_result(self, update: Dict[Any, Any]) -> typing.Optional[AsyncResult]:
         async_result = None
 
-        _special_types = (
-            'updateAuthorizationState',
-        )  # for authorizationProcess @extra.request_id doesn't work
+        _special_types = ('updateAuthorizationState',)  # for authorizationProcess @extra.request_id doesn't work
 
         if update.get('@type') in _special_types:
             request_id = update['@type']
@@ -416,9 +411,7 @@ class Telegram:
             async_result = self._results.get(request_id)
 
         if not async_result:
-            logger.debug(
-                'async_result has not been found in by request_id=%s', request_id
-            )
+            logger.debug('async_result has not been found in by request_id=%s', request_id)
         else:
             done = async_result.parse_update(update)
             if done:
@@ -477,7 +470,13 @@ class Telegram:
         return async_result
 
     def idle(
-        self, stop_signals: Tuple = (signal.SIGINT, signal.SIGTERM, signal.SIGABRT, signal.SIGQUIT)
+        self,
+        stop_signals: Tuple = (
+            signal.SIGINT,
+            signal.SIGTERM,
+            signal.SIGABRT,
+            signal.SIGQUIT,
+        ),
     ) -> None:
         """
         Blocks until one of the exit signals is received.
@@ -539,10 +538,7 @@ class Telegram:
         if self.proxy_server:
             self._send_add_proxy()
 
-        actions: Dict[
-            AuthorizationState,
-            Callable[[], AsyncResult],
-        ] = {
+        actions: Dict[AuthorizationState, Callable[[], AsyncResult]] = {
             AuthorizationState.NONE: self.get_authorization_state,
             AuthorizationState.WAIT_TDLIB_PARAMETERS: self._set_initial_params,
             AuthorizationState.WAIT_ENCRYPTION_KEY: self._send_encryption_key,
@@ -562,9 +558,7 @@ class Telegram:
             logger.info('[login] Login process has been started with bot token')
 
         while self.authorization_state != AuthorizationState.READY:
-            logger.info(
-                '[login] current authorization state: %s', self.authorization_state
-            )
+            logger.info('[login] current authorization state: %s', self.authorization_state)
 
             if not blocking and self.authorization_state in blocking_actions:
                 return self.authorization_state

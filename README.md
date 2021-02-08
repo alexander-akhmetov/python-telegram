@@ -8,7 +8,7 @@
 Python API for the [tdlib](https://github.com/tdlib/td) library.
 It helps you build your own Telegram clients.
 
-* [Changelog](docs/source/changelog.rst)
+* [Changelog](https://python-telegram.readthedocs.io/en/latest/changelog.html)
 * [Documentation](http://python-telegram.readthedocs.io)
 * [Tutorial](http://python-telegram.readthedocs.io/en/latest/tutorial.html)
 

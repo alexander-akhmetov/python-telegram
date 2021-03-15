@@ -1,5 +1,5 @@
 pytest==6.2.2
-flake8==3.8.4
+flake8==3.9.0
 pylint==2.7.2
 ipdb==0.13.4
 mypy==0.812

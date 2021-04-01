@@ -227,6 +227,15 @@ class Telegram:
 
         return self.call_method('getUser', params={'user_id': user_id})
 
+    def get_user_full_info(self, user_id: int) -> AsyncResult:
+        """
+        Requests the full information about a user with id = user_id.
+
+        https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1get_user_full_info.html
+        """
+
+        return self.call_method('getUserFullInfo', params={'user_id': user_id})
+
     def get_chats(self, offset_order: int = 0, offset_chat_id: int = 0, limit: int = 100) -> AsyncResult:
         """
         Returns a list of chats:

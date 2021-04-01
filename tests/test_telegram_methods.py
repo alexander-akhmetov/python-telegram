@@ -201,6 +201,32 @@ class TestTelegram:
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
 
+    def test_get_user(self, telegram):
+        user_id = 1
+
+        async_result = telegram.get_user(user_id=user_id)
+
+        exp_data = {
+            '@type': 'getUser',
+            'user_id': user_id,
+            '@extra': {'request_id': async_result.id},
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
+    def test_get_user_full_info(self, telegram):
+        user_id = 1
+
+        async_result = telegram.get_user_full_info(user_id=user_id)
+
+        exp_data = {
+            '@type': 'getUserFullInfo',
+            'user_id': user_id,
+            '@extra': {'request_id': async_result.id},
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
     def test_get_chat(self, telegram):
         chat_id = 1
 

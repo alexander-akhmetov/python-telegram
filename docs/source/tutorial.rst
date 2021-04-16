@@ -41,12 +41,12 @@ After that, you have to login:
 
     tg.login()
 
-In this example we use a blocking version of the `login` function. Example of non-blocking usage you can find here: :ref: `non_blocking_login`.
+In this example we use a blocking version of the `login` function.  You can find an example for non-blocking usage here: :ref:`non_blocking_login`.
 Telegram will send you a code in an SMS or as a Telegram message. If you have enabled 2FA, you will be asked for your password too. After successful login you can start using the library:
 
 .. code-block:: python
 
-    # this fucntion will be called
+    # this function will be called
     # for each received message
     def new_message_handler(update):
         print('New message!')

@@ -1,0 +1,31 @@
+version: 2
+updates:
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  reviewers:
+  - alexander-akhmetov
+  assignees:
+  - alexander-akhmetov
+  ignore:
+  - dependency-name: pylint
+    versions:
+    - 2.7.0
+    - 2.7.3
+    - 2.7.4
+    - 2.8.1
+  - dependency-name: black
+    versions:
+    - 21.4b0
+  - dependency-name: flake8
+    versions:
+    - 3.9.0
+  - dependency-name: ipdb
+    versions:
+    - 0.13.5
+    - 0.13.6
+  - dependency-name: mypy
+    versions:
+    - "0.812"

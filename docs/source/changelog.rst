@@ -2,6 +2,10 @@
 Changelog
 =========
 
+[unreleased]
+
+- Added ``get_user_full_info`` method (thanks to @ByPort).
+
 [0.14.0] - 2020-12-17
 
 - tdlib v1.7.0

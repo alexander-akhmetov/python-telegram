@@ -3,4 +3,4 @@ flake8==3.9.1
 pylint==2.8.2
 ipdb==0.13.7
 mypy==0.812
-black==21.4b2
+black==21.5b0

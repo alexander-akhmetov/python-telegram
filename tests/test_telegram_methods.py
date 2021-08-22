@@ -438,6 +438,9 @@ class TestTelegram__login_non_blocking:
             data={'authorization_state': {'@type': 'authorizationStateWaitCode'}}
         )
         telegram._send_telegram_code = lambda _: _get_async_result(
+            data={'authorization_state': {'@type': 'authorizationStateWaitRegistration'}}
+        )
+        telegram._register_user = lambda _, __: _get_async_result(
             data={'authorization_state': {'@type': 'authorizationStateWaitPassword'}}
         )
         telegram._send_password = lambda _: _get_async_result(
@@ -447,6 +450,10 @@ class TestTelegram__login_non_blocking:
         state = telegram.login(blocking=False)
         assert state == AuthorizationState.WAIT_CODE
         telegram.send_code('123')
+
+        state = telegram.login(blocking=False)
+        assert state == AuthorizationState.WAIT_REGISTRATION
+        telegram.register_user('new', 'user')
 
         state = telegram.login(blocking=False)
         assert state == AuthorizationState.WAIT_PASSWORD

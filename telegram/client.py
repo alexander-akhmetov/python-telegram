@@ -41,6 +41,7 @@ class AuthorizationState(enum.Enum):
     WAIT_TDLIB_PARAMETERS = 'authorizationStateWaitTdlibParameters'
     WAIT_ENCRYPTION_KEY = 'authorizationStateWaitEncryptionKey'
     WAIT_PHONE_NUMBER = 'authorizationStateWaitPhoneNumber'
+    WAIT_REGISTRATION = 'authorizationStateWaitRegistration'
     READY = 'authorizationStateReady'
     CLOSING = 'authorizationStateClosing'
     CLOSED = 'authorizationStateClosed'
@@ -542,7 +543,10 @@ class Telegram:
          - AuthorizationState.WAIT_PASSWORD if a telegram password is required.
            The caller should ask the telegram password
            to the end user and then call send_password(password)
-         - AuthorizationState.READY if the login process scceeded.
+         - AuthorizationState.WAIT_REGISTRATION if a the user must finish registration
+           The caller should ask the first and last names
+           to the end user and then call register_user(first, last)
+         - AuthorizationState.READY if the login process succeeded.
         """
         if self.proxy_server:
             self._send_add_proxy()
@@ -554,11 +558,13 @@ class Telegram:
             AuthorizationState.WAIT_PHONE_NUMBER: self._send_phone_number_or_bot_token,
             AuthorizationState.WAIT_CODE: self._send_telegram_code,
             AuthorizationState.WAIT_PASSWORD: self._send_password,
+            AuthorizationState.WAIT_REGISTRATION: self._register_user,
         }
 
         blocking_actions = (
             AuthorizationState.WAIT_CODE,
             AuthorizationState.WAIT_PASSWORD,
+            AuthorizationState.WAIT_REGISTRATION,
         )
 
         if self.phone:
@@ -707,6 +713,41 @@ class Telegram:
 
         """
         result = self._send_password(password)
+        self.authorization_state = self._wait_authorization_result(result)
+
+        return self.authorization_state
+
+    def _register_user(self, first: Optional[str] = None, last: Optional[str] = None) -> AsyncResult:
+        logger.info('Registering user')
+        if first is None:
+            first = input('Enter first name: ')
+        if last is None:
+            last = input('Enter last name: ')
+
+        data = {
+            '@type': 'registerUser',
+            'first_name': first,
+            'last_name': last,
+        }
+        return self._send_data(data, result_id='updateAuthorizationState')
+
+    def register_user(self, first: str, last: str) -> AuthorizationState:
+        """
+        Finishes the new user registration process
+
+        Args:
+          first the user's first name
+          last the user's last name
+          If either argument is None, it will be asked to the user using the input() function
+
+        Returns
+         - AuthorizationState. The called have to call `login` to continue the login process.
+
+        Raises:
+          - RuntimeError if the login failed
+
+        """
+        result = self._register_user(first, last)
         self.authorization_state = self._wait_authorization_result(result)
 
         return self.authorization_state

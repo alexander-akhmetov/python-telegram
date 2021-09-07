@@ -22,7 +22,7 @@ Initialize a new telegram client with your credentials:
     from telegram.client import Telegram
 
     tg = Telegram(
-        api_id='api_id',
+        api_id=123456,
         api_hash='api_hash',
         phone='+31611111111',
         database_encryption_key='changeme1234',
@@ -88,7 +88,7 @@ Full code of our new bot:
     from telegram.client import Telegram
 
     tg = Telegram(
-        api_id='api_id',
+        api_id=123456,
         api_hash='api_hash',
         phone='+31611111111',
         database_encryption_key='changeme1234',

@@ -1,6 +1,6 @@
 pytest==6.2.5
 flake8==3.9.2
-pylint==2.10.2
+pylint==2.11.1
 ipdb==0.13.9
 mypy==0.812
 black==21.8b0

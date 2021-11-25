@@ -1,0 +1,19 @@
+daysUntilStale: 180
+daysUntilClose: 30
+exemptLabels:
+  - pinned
+  - security
+  - bug
+  - dependencies
+  - help wanted
+  - good first issue
+  - enhancement
+
+staleLabel: wontfix
+
+markComment: >
+  This issue has been automatically marked as stale because it has not had
+  recent activity. It will be closed if no further activity occurs. Thank you
+  for your contributions.
+
+closeComment: false

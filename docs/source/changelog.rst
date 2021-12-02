@@ -2,6 +2,10 @@
 Changelog
 =========
 
+[0.15.0] - 2021-12-03
+
+- tdlib v1.7.9. Fixes ``UPDATE_APP_TO_LOGIN`` errors.
+
 [0.14.0] - 2020-12-17
 
 - tdlib v1.7.0

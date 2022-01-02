@@ -2,6 +2,10 @@
 Changelog
 =========
 
+[unreleased]
+
+- Search for the system library first, and fallback to the embedded one if the system was not found.
+
 [0.15.0] - 2021-12-03
 
 - tdlib v1.7.9. Fixes ``UPDATE_APP_TO_LOGIN`` errors.

@@ -45,6 +45,7 @@ class AuthorizationState(enum.Enum):
     READY = 'authorizationStateReady'
     CLOSING = 'authorizationStateClosing'
     CLOSED = 'authorizationStateClosed'
+    LOGGING_OUT = 'authorizationStateLoggingOut'
 
 
 class Telegram:
@@ -564,12 +565,15 @@ class Telegram:
 
         actions: Dict[AuthorizationState, Callable[[], AsyncResult]] = {
             AuthorizationState.NONE: self.get_authorization_state,
+            AuthorizationState.LOGGING_OUT: self.get_authorization_state,
+            AuthorizationState.CLOSING: self.get_authorization_state,
             AuthorizationState.WAIT_TDLIB_PARAMETERS: self._set_initial_params,
             AuthorizationState.WAIT_ENCRYPTION_KEY: self._send_encryption_key,
             AuthorizationState.WAIT_PHONE_NUMBER: self._send_phone_number_or_bot_token,
             AuthorizationState.WAIT_CODE: self._send_telegram_code,
             AuthorizationState.WAIT_PASSWORD: self._send_password,
             AuthorizationState.WAIT_REGISTRATION: self._register_user,
+
         }
 
         blocking_actions = (
@@ -771,3 +775,9 @@ class Telegram:
         self.authorization_state = self._wait_authorization_result(result)
 
         return self.authorization_state
+
+    def logout(self):
+        """
+        Logs out the user.
+        """
+        self.call_method('logOut', block=True)

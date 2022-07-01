@@ -202,6 +202,51 @@ class Telegram:
 
         return self._send_data(data)
 
+    def import_contacts(self, contacts) -> AsyncResult:
+        """
+        Adds new contacts or edits existing contacts by their phone numbers.
+        https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1import_contacts.html
+
+        Args:
+            contacts
+
+        contacts is a list of the form
+            [
+                {
+                    "phone_number": "+380 12 345 67 89",
+                    "first_name": "Name",
+                    "last_name": "Surname"
+                },
+                {
+                    "phone_number": "+380 09 876 54 32",
+                    "first_name": "Name",
+                    "last_name": "Surname"
+                },
+                ...
+            ]
+        phone format is country-specifc
+
+        Returns:
+            AsyncResult
+            The update will be:
+            {
+                '@type': 'importedContacts',
+                'user_ids': [1, 2],
+                'importer_count': [3, 4],
+                ...
+            }
+        """
+
+        for contact in contacts:
+            contact["@type"] = "contact"
+
+        data = {
+            '@type': 'importContacts',
+            'contacts': contacts,
+        }
+
+        return self._send_data(data)
+
     def get_chat(self, chat_id: int) -> AsyncResult:
         """
         This is offline request, if there is no chat in your database it will not be found

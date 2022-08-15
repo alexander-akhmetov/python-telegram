@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def _get_tdjson_lib_path() -> str:
-    system_library = ctypes.util.find_library("libtdjson")
+    system_library = ctypes.util.find_library("tdjson")
 
     if system_library is not None:
         return system_library

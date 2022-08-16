@@ -1,5 +1,6 @@
 dist
 build
+python_telegram.egg-info
 .tdlib_files
 .tdlib_files*
 .tox

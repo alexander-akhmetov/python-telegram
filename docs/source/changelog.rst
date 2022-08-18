@@ -5,6 +5,7 @@ Changelog
 [unreleased]
 
 - Search for the system library first, and fallback to the embedded one if the system was not found.
+- Fixed the finding system library mechanism (thanks to @weirdo-neutrino)
 
 [0.15.0] - 2021-12-03
 

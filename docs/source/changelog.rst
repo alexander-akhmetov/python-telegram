@@ -2,7 +2,7 @@
 Changelog
 =========
 
-[unreleased]
+[0.16.0] - 2022-08-18
 
 - Search for the system library first, and fallback to the embedded one if the system was not found.
 - Fixed the finding system library mechanism (thanks to @weirdo-neutrino)

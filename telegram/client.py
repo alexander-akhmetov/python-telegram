@@ -202,7 +202,7 @@ class Telegram:
 
         return self._send_data(data)
 
-    def import_contacts(self, contacts) -> AsyncResult:
+    def import_contacts(self, contacts: List[Dict[str, str]]) -> AsyncResult:
         """
         Adds new contacts or edits existing contacts by their phone numbers.
         https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1import_contacts.html

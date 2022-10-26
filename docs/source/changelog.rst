@@ -2,6 +2,10 @@
 Changelog
 =========
 
+[unreleased]
+
+- Added ``import_contacts`` method. (thanks to @vlad-lf)
+
 [0.16.0] - 2022-08-18
 
 - Search for the system library first, and fallback to the embedded one if the system was not found.

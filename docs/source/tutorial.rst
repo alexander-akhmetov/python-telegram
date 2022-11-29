@@ -113,6 +113,20 @@ Full code of our new bot:
 
 Done! You have created your first client for the Telegram Messenger.
 
+call_method
+-----------
+
+A more universal method of the client is ``call_method``.
+You can use it to call any `other method <https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1_function.html>`_ supported by tdlib:
+
+.. code-block:: python
+
+    result = tg.call_method(
+        'getUser',
+        params={'user_id': 123},
+    )
+
+
 idle and stop
 -------------
 

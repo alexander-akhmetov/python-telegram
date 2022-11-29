@@ -8,13 +8,14 @@
 Python API for the [tdlib](https://github.com/tdlib/td) library.
 It helps you build your own Telegram clients.
 
-* [Changelog](https://python-telegram.readthedocs.io/en/latest/changelog.html)
-* [Documentation](http://python-telegram.readthedocs.io)
-* [Tutorial](http://python-telegram.readthedocs.io/en/latest/tutorial.html)
+- [Changelog](https://python-telegram.readthedocs.io/en/latest/changelog.html)
+- [Documentation](http://python-telegram.readthedocs.io)
+- [Tutorial](http://python-telegram.readthedocs.io/en/latest/tutorial.html)
 
 ## Installation
 
-This library requires Python 3.6+ and Linux or MacOS.
+This library requires Python 3.7+ and Linux or MacOS.
+Windows is not supported, but you can use Docker if you want to run it on Windows.
 
 ```shell
 pip install python-telegram
@@ -38,6 +39,7 @@ docker run -i -t --rm \
 Have a look at the [tutorial](http://python-telegram.readthedocs.io/en/latest/tutorial.html) :)
 
 Basic example:
+
 ```python
 from telegram.client import Telegram
 
@@ -46,7 +48,11 @@ tg = Telegram(
     api_hash='api_hash',
     phone='+31611111111',  # you can pass 'bot_token' instead
     database_encryption_key='changekey123',
-    files_directory='/tmp/.tdlib_files/',
+
+    # The default location for files is in /tmp.
+    # Set `files_directory` if you want to preserve the state.
+    # For example:
+    files_directory='/var/tdlib/31611111111',
 )
 tg.login()
 
@@ -67,9 +73,19 @@ print(result.update)
 tg.stop()  # you must call `stop` at the end of the script
 ```
 
+A more universal method is `call_method`.
+You can use it to call any [method](https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1_function.html) supported by tdlib:
+
+```python
+result = tg.call_method(
+    'getUser',
+    params={'user_id': 123},
+)
+```
+
 More examples you can find in the [/examples/ directory](/examples/).
 
-----
+---
 
 More information in the [documentation](http://python-telegram.readthedocs.io).
 

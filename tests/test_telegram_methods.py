@@ -5,6 +5,7 @@ from unittest.mock import patch
 from telegram import VERSION
 from telegram.utils import AsyncResult
 from telegram.client import Telegram, MESSAGE_HANDLER_TYPE, AuthorizationState
+from telegram.text import Spoiler
 
 API_ID = 1
 API_HASH = 'hash'
@@ -56,9 +57,33 @@ class TestTelegram:
             'chat_id': chat_id,
             'input_message_content': {
                 '@type': 'inputMessageText',
-                'text': {'@type': 'formattedText', 'text': text},
+                'text': {
+                    '@type': 'formattedText',
+                    'text': text,
+                    'entities': [],
+                },
             },
-            '@extra': {'request_id': async_result.id},
+            '@extra': {
+                'request_id': async_result.id,
+            },
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
+    def test_parse_text_entities(self, telegram):
+        text = Spoiler('Hello world!').to_html()
+
+        async_result = telegram.parse_text_entities(text=text, parse_mode='HTML')
+
+        exp_data = {
+            '@type': 'parseTextEntities',
+            'text': '<span class="tg-spoiler">Hello world!</span>',
+            'parse_mode': {
+                '@type': 'textParseModeHTML',
+            },
+            '@extra': {
+                'request_id': async_result.id,
+            },
         }
 
         telegram._tdjson.send.assert_called_once_with(exp_data)

@@ -40,6 +40,7 @@ Have a look at the [tutorial](http://python-telegram.readthedocs.io/en/latest/tu
 Basic example:
 ```python
 from telegram.client import Telegram
+from telegram.text import Spoiler
 
 tg = Telegram(
     api_id='api_id',
@@ -55,10 +56,8 @@ tg.login()
 result = tg.get_chats()
 result.wait()
 
-result = tg.send_message(
-    chat_id=args.chat_id,
-    text=args.text,
-)
+chat_id: int
+result = tg.send_message(chat_id, Spoiler('Hello world!'))
 # `tdlib` is asynchronous, so `python-telegram` always returns you an `AsyncResult` object.
 # You can receive a result with the `wait` method of this object.
 result.wait()

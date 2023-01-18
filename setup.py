@@ -22,6 +22,7 @@ setup(
     author='Alexander Akhmetov',
     author_email='me@aleks.sh',
     url='https://github.com/alexander-akhmetov/python-telegram',
+    long_description=open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
     packages=[
         'telegram',
     ],
@@ -31,4 +32,7 @@ setup(
             'lib/linux/*',
         ],
     },
+    install_requires=[
+        'telegram-text>=0.1.1',
+    ],
 )

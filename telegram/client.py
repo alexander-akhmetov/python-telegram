@@ -1,4 +1,5 @@
 import os
+import sys
 import hashlib
 import time
 import queue
@@ -27,6 +28,12 @@ from telegram import VERSION
 from telegram.utils import AsyncResult
 from telegram.tdjson import TDJson
 from telegram.worker import BaseWorker, SimpleWorker
+from telegram.text import Element
+
+if sys.version_info >= (3, 8):  # Backwards compatibility for python < 3.8
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +177,55 @@ class Telegram:
             logger.info('Authorization state: %s', self.authorization_state)
             time.sleep(0.5)
 
-    def send_message(self, chat_id: int, text: str) -> AsyncResult:
+    def parse_text_entities(self, text: str, parse_mode: Literal['HTML', 'Markdown']) -> AsyncResult:
+        """
+        Parses text from 'HTML' and 'Markdown' (not MarkdownV2) into plain
+        text and internal telegram style description.
+
+        Args:
+            text
+            parse_mode
+
+        Returns:
+            AsyncResult
+            The update will be:
+                {
+                    '@type': 'formattedText',
+                    'text': 'Hello world!',
+                    'entities': [
+                        {
+                            '@type': 'textEntity',
+                            'offset': 0,
+                            'length': 12,
+                            'type': {
+                                '@type': 'textEntityTypeSpoiler'
+                            }
+                        }
+                        ...
+                    ]
+                }
+        """
+
+        parse_mode_types = {
+            'HTML': 'textParseModeHTML',
+            'Markdown': 'textParseModeMarkdown',
+        }
+        data = {
+            '@type': 'parseTextEntities',
+            'text': text,
+            'parse_mode': {
+                '@type': parse_mode_types[parse_mode],
+            },
+        }
+
+        return self._send_data(data)
+
+    def send_message(
+        self,
+        chat_id: int,
+        text: Union[str, Element],
+        entities: Union[List[dict], None] = None,
+    ) -> AsyncResult:
         """
         Sends a message to a chat. The chat must be in the tdlib's database.
         If there is no chat in the DB, tdlib returns an error.
@@ -191,12 +246,31 @@ class Telegram:
                     ...
                 }
         """
+
+        if entities is None:
+            entities = []
+
+        updated_text: str
+        if isinstance(text, Element):
+            result = self.parse_text_entities(text.to_html(), parse_mode='HTML')
+            result.wait()
+            assert result.update is not None
+            update: dict = result.update
+            entities = update['entities']
+            updated_text = update['text']
+        else:
+            updated_text = text
+
         data = {
             '@type': 'sendMessage',
             'chat_id': chat_id,
             'input_message_content': {
                 '@type': 'inputMessageText',
-                'text': {'@type': 'formattedText', 'text': text},
+                'text': {
+                    '@type': 'formattedText',
+                    'text': updated_text,
+                    'entities': entities,
+                },
             },
         }
 

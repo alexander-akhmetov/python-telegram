@@ -1,3 +1,8 @@
+"""Since telegram.text is based on a third-party module telegram-text,
+you can find more examples of how to use markup components on
+telegram-text.alinsky.tech or github.com/SKY-ALIN/telegram-text
+"""
+
 from telegram_text import (
     Bold,
     Chain,

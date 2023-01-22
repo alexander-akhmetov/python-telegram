@@ -33,6 +33,6 @@ setup(
         ],
     },
     install_requires=[
-        'telegram-text>=0.1.1',
+        'telegram-text~=0.1',
     ],
 )

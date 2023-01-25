@@ -2,7 +2,7 @@
 Changelog
 =========
 
-[unreleased]
+[0.17.0] - 2023-01-25
 
 - Added ``import_contacts`` method. (thanks to @vlad-lf)
 - Added markup support. It is now possible to send formatted text (html/markdown and telegram-specific formats, for example hidden spoiler styling)  (thanks to @SKY-ALIN)

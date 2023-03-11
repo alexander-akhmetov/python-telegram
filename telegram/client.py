@@ -46,7 +46,6 @@ class AuthorizationState(enum.Enum):
     WAIT_CODE = 'authorizationStateWaitCode'
     WAIT_PASSWORD = 'authorizationStateWaitPassword'
     WAIT_TDLIB_PARAMETERS = 'authorizationStateWaitTdlibParameters'
-    WAIT_ENCRYPTION_KEY = 'authorizationStateWaitEncryptionKey'
     WAIT_PHONE_NUMBER = 'authorizationStateWaitPhoneNumber'
     WAIT_REGISTRATION = 'authorizationStateWaitRegistration'
     READY = 'authorizationStateReady'
@@ -684,7 +683,6 @@ class Telegram:
         actions: Dict[AuthorizationState, Callable[[], AsyncResult]] = {
             AuthorizationState.NONE: self.get_authorization_state,
             AuthorizationState.WAIT_TDLIB_PARAMETERS: self._set_initial_params,
-            AuthorizationState.WAIT_ENCRYPTION_KEY: self._send_encryption_key,
             AuthorizationState.WAIT_PHONE_NUMBER: self._send_phone_number_or_bot_token,
             AuthorizationState.WAIT_CODE: self._send_telegram_code,
             AuthorizationState.WAIT_PASSWORD: self._send_password,
@@ -723,37 +721,26 @@ class Telegram:
             self.files_directory,
             self.use_test_dc,
         )
-        data = {
-            # todo: params
-            '@type': 'setTdlibParameters',
-            'parameters': {
-                'use_test_dc': self.use_test_dc,
-                'api_id': self.api_id,
-                'api_hash': self.api_hash,
-                'device_model': self.device_model,
-                'system_version': self.system_version,
-                'application_version': self.application_version,
-                'system_language_code': self.system_language_code,
-                'database_directory': os.path.join(self.files_directory, 'database'),
-                'use_message_database': self.use_message_database,
-                'files_directory': os.path.join(self.files_directory, 'files'),
-                'use_secret_chats': self.use_secret_chats,
-            },
-        }
-
-        return self._send_data(data, result_id='updateAuthorizationState')
-
-    def _send_encryption_key(self) -> AsyncResult:
-        logger.info('Sending encryption key')
 
         key = self._database_encryption_key
-
         if isinstance(key, str):
             key = key.encode()
 
         data = {
-            '@type': 'checkDatabaseEncryptionKey',
-            'encryption_key': base64.b64encode(key).decode(),
+            # todo: params
+            '@type': 'setTdlibParameters',
+            'use_test_dc': self.use_test_dc,
+            'api_id': self.api_id,
+            'api_hash': self.api_hash,
+            'device_model': self.device_model,
+            'system_version': self.system_version,
+            'application_version': self.application_version,
+            'system_language_code': self.system_language_code,
+            'database_directory': os.path.join(self.files_directory, 'database'),
+            'use_message_database': self.use_message_database,
+            'files_directory': os.path.join(self.files_directory, 'files'),
+            'use_secret_chats': self.use_secret_chats,
+            'database_encryption_key': base64.b64encode(key).decode(),
         }
 
         return self._send_data(data, result_id='updateAuthorizationState')

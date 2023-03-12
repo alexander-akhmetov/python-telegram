@@ -1,7 +1,7 @@
 pytest==7.2.2
 flake8==5.0.4
 pylint==2.17.0
-ipdb==0.13.11
+ipdb==0.13.13
 mypy==1.0.1
 black==23.1.0
 types-pkg-resources==0.1.3

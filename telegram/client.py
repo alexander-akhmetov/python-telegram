@@ -46,6 +46,7 @@ class AuthorizationState(enum.Enum):
     WAIT_CODE = 'authorizationStateWaitCode'
     WAIT_PASSWORD = 'authorizationStateWaitPassword'
     WAIT_TDLIB_PARAMETERS = 'authorizationStateWaitTdlibParameters'
+    WAIT_ENCRYPTION_KEY = 'authorizationStateWaitEncryptionKey'
     WAIT_PHONE_NUMBER = 'authorizationStateWaitPhoneNumber'
     WAIT_REGISTRATION = 'authorizationStateWaitRegistration'
     READY = 'authorizationStateReady'
@@ -116,6 +117,10 @@ class Telegram:
             raise ValueError('You must provide bot_token or phone')
 
         self._database_encryption_key = database_encryption_key
+        if isinstance(self._database_encryption_key, str):
+            self._database_encryption_key = self._database_encryption_key.encode()
+
+        self._database_encryption_key = base64.b64encode(self._database_encryption_key).decode()
 
         if not files_directory:
             hasher = hashlib.md5()
@@ -683,6 +688,7 @@ class Telegram:
         actions: Dict[AuthorizationState, Callable[[], AsyncResult]] = {
             AuthorizationState.NONE: self.get_authorization_state,
             AuthorizationState.WAIT_TDLIB_PARAMETERS: self._set_initial_params,
+            AuthorizationState.WAIT_ENCRYPTION_KEY: self._send_encryption_key,
             AuthorizationState.WAIT_PHONE_NUMBER: self._send_phone_number_or_bot_token,
             AuthorizationState.WAIT_CODE: self._send_telegram_code,
             AuthorizationState.WAIT_PASSWORD: self._send_password,
@@ -722,13 +728,7 @@ class Telegram:
             self.use_test_dc,
         )
 
-        key = self._database_encryption_key
-        if isinstance(key, str):
-            key = key.encode()
-
-        data = {
-            # todo: params
-            '@type': 'setTdlibParameters',
+        parameters = {
             'use_test_dc': self.use_test_dc,
             'api_id': self.api_id,
             'api_hash': self.api_hash,
@@ -740,7 +740,23 @@ class Telegram:
             'use_message_database': self.use_message_database,
             'files_directory': os.path.join(self.files_directory, 'files'),
             'use_secret_chats': self.use_secret_chats,
-            'database_encryption_key': base64.b64encode(key).decode(),
+        }
+        data: Dict[str, typing.Any] = {
+            '@type': 'setTdlibParameters',
+            'parameters': parameters,
+            # since tdlib 1.8.6
+            'database_encryption_key': self._database_encryption_key,
+            **parameters,
+        }
+
+        return self._send_data(data, result_id='updateAuthorizationState')
+
+    def _send_encryption_key(self) -> AsyncResult:
+        logger.info('Sending encryption key')
+
+        data = {
+            '@type': 'checkDatabaseEncryptionKey',
+            'encryption_key': self._database_encryption_key,
         }
 
         return self._send_data(data, result_id='updateAuthorizationState')

@@ -2,6 +2,10 @@
 Changelog
 =========
 
+[0.18.0] - 2023-03-13
+
+- Added support for tdlib > 1.8.5. (thanks to @JleMyP)
+
 [0.17.0] - 2023-01-25
 
 - Added ``import_contacts`` method. (thanks to @vlad-lf)

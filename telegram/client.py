@@ -386,7 +386,7 @@ class Telegram:
     def get_chat_history(
         self,
         chat_id: int,
-        limit: int = 1000,
+        limit: int = 100,
         from_message_id: int = 0,
         offset: int = 0,
         only_local: bool = False,

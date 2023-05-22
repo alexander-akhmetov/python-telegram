@@ -9,6 +9,7 @@ import getpass
 import logging
 import base64
 import threading
+import re
 from typing import (
     Any,
     Dict,
@@ -223,7 +224,86 @@ class Telegram:
         }
 
         return self._send_data(data)
-
+    
+	def leave_chat(self,chat_id: int):
+        "leave from chat"
+		data = {
+			'@type': "leaveChat",
+			'chat_id': chat_id,
+		}
+		return self._send_data(data)
+    
+	def send_action(self,chat_id: int,action: str,,progress: int = 100):
+        """
+        send action to chat
+        actions:
+        Cancel, 
+        ChoosingContact, 
+        ChoosingLocation, 
+        ChoosingSticker, 
+        RecordingVideo, 
+        RecordingVideoNote, 
+        RecordingVoiceNote, 
+        StartPlayingGame, 
+        Typing, 
+        UploadingDocument, 
+        UploadingPhoto, 
+        UploadingVideo, 
+        UploadingVideoNote, 
+        UploadingVoiceNote, 
+        WatchingAnimations
+        """
+		data = {
+			"@type": "sendChatAction",
+			"chat_id": chat_id,
+			"action": {
+				"@type": f"chatAction{action}",
+				"progress": progress,
+			}
+		}
+		return self._send_data(data)
+    
+	def pin_message(self,chat_id,message_id,disable_notification: bool = False):
+		chat_id = int(str(chat_id).replace('-100',''))
+		data = {
+			"@type":'pinSupergroupMessage',
+			"supergroup_id":chat_id,
+			"message_id":message_id,
+			"disable_notification":disable_notification,
+		}
+		return self._send_data(data)
+    
+	def unpin_message(self,chat_id):
+		chat_id = int(str(chat_id).replace('-100',''))
+		data = {
+			"@type":'unpinSupergroupMessage',
+			"supergroup_id":chat_id,
+		}
+		return self._send_data(data)
+		
+	def set_profile(self,photo)-> AsyncResult:
+        "set profile account"
+		if re.match('/',str(photo)):
+			infile = {
+				"@type":'inputFileLocal',
+				"path":photo
+			}
+		elif re.match('^\d+$',str(photo)):
+			infile = {
+				"@type": 'inputFileId',
+				"id":photo
+			}
+		else:
+			infile = {
+				"@type": 'inputFileRemote',
+				"id": photo
+			}	
+		data = {
+			"@type": "setProfilePhoto",
+			"photo": infile,
+		}
+		return self._send_data(data)
+		
     def send_message(
         self,
         chat_id: int,
@@ -333,7 +413,14 @@ class Telegram:
         data = {'@type': 'getChat', 'chat_id': chat_id}
 
         return self._send_data(data)
-
+    
+	def get_active_sessions(self) -> AsyncResult:
+        "get session list"
+		data = {
+			"@type": "getActiveSessions",
+		}
+		return self._send_data(data)
+    
     def get_me(self) -> AsyncResult:
         """
         Requests information of the current user (getMe method)
@@ -382,7 +469,65 @@ class Telegram:
         }
 
         return self._send_data(data)
-
+    
+	def get_profile(self,user_id, offset, limit):
+        "get profile user"
+		data = {
+			"@type": "getUserProfilePhotos",
+			"user_id":user_id,
+			"offset":offset,
+			"limit":limit
+		}
+		return self._send_data(data) 
+    
+	def get_members(self,chat_id:int,filter,offset=0,limit=200)  -> AsyncResult:
+        '''
+        get members of filter
+        filters:
+        
+        Administrators,
+        Banned,
+        Bots,
+        Contacts,
+        Mention,
+        Recent,
+        Restricted,
+        Search
+        
+        for exampel:
+        bot.get_members(-100546414564,"Administrators")
+        '''
+		chat_id = int(str(chat_id).replace('-100',''))
+		data = {
+			"@type": 'getSupergroupMembers',
+			"supergroup_id": chat_id,
+			"filter": {
+				"@type": f"supergroupMembersFilter{filter}",
+				},
+			"offset": offset,
+			"limit": limit,
+		}
+		return self._send_data(data)
+    
+	def search_public_chat(self,username: str) -> AsyncResult:
+        "search in telegram"
+		data = {
+			"@type": 'searchPublicChat',
+			"username": username,
+		}	
+		return self._send_data(data)
+    
+	def view_messages(self,chat_id:int, message_ids:list)  -> AsyncResult:
+        "mark as read messages"
+        # bot.viewMessages(-10001454654,[1544])
+		data = {
+			"@type":"viewMessages",
+			"chat_id": chat_id,
+			"message_ids": message_ids,
+			"force_read":True,
+		}
+		return self._send_data(data)
+    
     def get_chat_history(
         self,
         chat_id: int,
@@ -444,6 +589,15 @@ class Telegram:
 
         return self._send_data(data)
 
+    def delete_chat_message_from_user(self,chat_id:int, user_id:int) -> AsyncResult:
+        "delete all message of user in chat"
+		data = {
+			"@type": 'deleteChatMessagesFromUser',
+			"chat_id": chat_id,
+			"user_id": user_id
+		}	
+		return self._send_data(data)
+    
     def delete_messages(self, chat_id: int, message_ids: List[int], revoke: bool = True) -> AsyncResult:
         """
         Delete a list of messages in a chat

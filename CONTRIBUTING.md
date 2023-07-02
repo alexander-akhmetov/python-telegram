@@ -3,7 +3,7 @@
 Pull requests are welcome!
 
 Feel free to open an issue if you found a bug, have new ideas, suggestions or found a mistake
-in [documentation](https://python-telegram.readthedocs.io/en/latest/). 
+in [documentation](https://python-telegram.readthedocs.io/en/latest/).
 
 ## Reporting bugs
 
@@ -21,7 +21,6 @@ some sample code.
 3. Ensure the tests pass with your changes.
 4. Create a new PR!
 
-
 ## Coding style
 
 The project uses [black](https://github.com/psf/black) as a autoformatter tool
@@ -37,8 +36,8 @@ Run tests:
 tox
 ```
 
-Run a specific test using python 3.7:
+Run a specific test using python 3.11:
 
 ```shell
-tox -e py37 -- -k test_add_message_handler
+tox -e py311 -- -k test_add_message_handler
 ```

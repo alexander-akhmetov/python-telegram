@@ -8,13 +8,13 @@
 Python API for the [tdlib](https://github.com/tdlib/td) library.
 It helps you build your own Telegram clients.
 
-* [Changelog](https://python-telegram.readthedocs.io/en/latest/changelog.html)
-* [Documentation](http://python-telegram.readthedocs.io)
-* [Tutorial](http://python-telegram.readthedocs.io/en/latest/tutorial.html)
+- [Changelog](https://python-telegram.readthedocs.io/en/latest/changelog.html)
+- [Documentation](http://python-telegram.readthedocs.io)
+- [Tutorial](http://python-telegram.readthedocs.io/en/latest/tutorial.html)
 
 ## Installation
 
-This library requires Python 3.6+ and Linux or MacOS.
+This library requires Python 3.8+ and Linux or MacOS.
 
 ```shell
 pip install python-telegram
@@ -38,6 +38,7 @@ docker run -i -t --rm \
 Have a look at the [tutorial](http://python-telegram.readthedocs.io/en/latest/tutorial.html) :)
 
 Basic example:
+
 ```python
 from telegram.client import Telegram
 from telegram.text import Spoiler
@@ -68,7 +69,7 @@ tg.stop()  # you must call `stop` at the end of the script
 
 More examples you can find in the [/examples/ directory](/examples/).
 
-----
+---
 
 More information in the [documentation](http://python-telegram.readthedocs.io).
 

@@ -2,6 +2,10 @@
 Changelog
 =========
 
+[unreleased]
+
+- Python 3.7 is no longer supported.
+
 [0.18.0] - 2023-03-13
 
 - Added support for tdlib > 1.8.5. (thanks to @JleMyP)

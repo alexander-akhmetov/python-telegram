@@ -35,7 +35,7 @@ Do not forget install it after:
 Library installation
 ~~~~~~~~~~~~~~~~~~~~
 
-This library works with Python 3.6+ only.
+This library works with Python 3.8+ only.
 
 .. code-block:: bash
 

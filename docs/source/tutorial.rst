@@ -72,8 +72,9 @@ Let's add more logic to the message handler:
         # we want to process only text messages
         message_content = update['message']['content'].get('text', {})
         message_text = message_content.get('text', '').lower()
+        is_outgoing = update['message']['is_outgoing']
 
-        if message_text == 'ping':
+        if not is_outgoing and message_text == 'ping':
             chat_id = update['message']['chat_id']
             print(f'Ping has been received from {chat_id}')
             tg.send_message(
@@ -99,8 +100,9 @@ Full code of our new bot:
         # we want to process only text messages
         message_content = update['message']['content'].get('text', {})
         message_text = message_content.get('text', '').lower()
+        is_outgoing = update['message']['is_outgoing']
 
-        if message_text == 'ping':
+        if not is_outgoing and message_text == 'ping':
             chat_id = update['message']['chat_id']
             print(f'Ping has been received from {chat_id}')
             tg.send_message(

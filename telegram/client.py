@@ -1,34 +1,27 @@
-import os
-import sys
+import base64
+import enum
+import getpass
 import hashlib
-import time
+import json
+import logging
+import os
 import queue
 import signal
-import typing
-import getpass
-import logging
-import base64
+import sys
 import threading
-from typing import (
-    Any,
-    Dict,
-    List,
-    Type,
-    Callable,
-    Optional,
-    DefaultDict,
-    Union,
-    Tuple,
-)
-from types import FrameType
+import time
+import typing
 from collections import defaultdict
-import enum
+from types import FrameType
+from typing import (Any, Callable, DefaultDict, Dict, List, Optional, Tuple,
+                    Type, Union)
 
 from telegram import VERSION
-from telegram.utils import AsyncResult
+from telegram.raw_api import Object
 from telegram.tdjson import TDJson
-from telegram.worker import BaseWorker, SimpleWorker
 from telegram.text import Element
+from telegram.utils import AsyncResult
+from telegram.worker import BaseWorker, SimpleWorker
 
 if sys.version_info >= (3, 8):  # Backwards compatibility for python < 3.8
     from typing import Literal
@@ -59,7 +52,7 @@ class Telegram:
         self,
         api_id: int,
         api_hash: str,
-        database_encryption_key: Union[str, bytes],
+        database_encryption_key: Optional[Union[str, bytes]] = None,
         phone: Optional[str] = None,
         bot_token: Optional[str] = None,
         library_path: Optional[str] = None,
@@ -117,10 +110,12 @@ class Telegram:
             raise ValueError('You must provide bot_token or phone')
 
         self._database_encryption_key = database_encryption_key
-        if isinstance(self._database_encryption_key, str):
-            self._database_encryption_key = self._database_encryption_key.encode()
-
-        self._database_encryption_key = base64.b64encode(self._database_encryption_key).decode()
+        if database_encryption_key is not None:
+            # self._database_encryption_key = database_encryption_key
+            if isinstance(self._database_encryption_key, str):
+                self._database_encryption_key = self._database_encryption_key.encode()
+                
+            self._database_encryption_key = base64.b64encode(self._database_encryption_key).decode()
 
         if not files_directory:
             hasher = hashlib.md5()
@@ -128,7 +123,13 @@ class Telegram:
             hasher.update(str_to_encode.encode('utf-8'))
             directory_name = hasher.hexdigest()
             files_directory = f'/tmp/.tdlib_files/{directory_name}/'
-
+        else:
+            # make sure path exists
+            try:
+                os.makedirs(os.path.abspath(files_directory))
+            except:
+                pass
+            
         self.files_directory = files_directory
 
         self._authorized = False
@@ -386,7 +387,7 @@ class Telegram:
     def get_chat_history(
         self,
         chat_id: int,
-        limit: int = 100,
+        limit: int = 1000,
         from_message_id: int = 0,
         offset: int = 0,
         only_local: bool = False,
@@ -581,6 +582,23 @@ class Telegram:
         if func not in self._update_handlers[handler_type]:
             self._update_handlers[handler_type].append(func)
 
+    def send_raw_api(self, data: Object, result_id: str = None) -> AsyncResult:
+        data = json.loads(str(data))
+        if '@extra' not in data:
+            data['@extra'] = {}
+
+        if not result_id and 'request_id' in data['@extra']:
+            result_id = data['@extra']['request_id']
+
+        async_result = AsyncResult(client=self, result_id=result_id)
+        data['@extra']['request_id'] = async_result.id
+
+        self._tdjson.send(data)
+        self._results[async_result.id] = async_result
+        async_result.request = data
+
+        return async_result
+
     def _send_data(
         self,
         data: Dict[Any, Any],
@@ -741,23 +759,30 @@ class Telegram:
             'files_directory': os.path.join(self.files_directory, 'files'),
             'use_secret_chats': self.use_secret_chats,
         }
-        data: Dict[str, typing.Any] = {
-            '@type': 'setTdlibParameters',
-            'parameters': parameters,
-            # since tdlib 1.8.6
-            'database_encryption_key': self._database_encryption_key,
-            **parameters,
-        }
-
+        if self._database_encryption_key is not None:
+            data: Dict[str, typing.Any] = {
+                '@type': 'setTdlibParameters',
+                'parameters': parameters,
+                # since tdlib 1.8.6
+                'database_encryption_key': self._database_encryption_key,
+                **parameters,
+            }
+        else:
+            data: Dict[str, typing.Any] = {
+                '@type': 'setTdlibParameters',
+                'parameters': parameters,
+                **parameters,
+            }
+            
         return self._send_data(data, result_id='updateAuthorizationState')
 
     def _send_encryption_key(self) -> AsyncResult:
         logger.info('Sending encryption key')
-
-        data = {
-            '@type': 'checkDatabaseEncryptionKey',
-            'encryption_key': self._database_encryption_key,
-        }
+        if self._database_encryption_key is not None:
+            data = {
+                '@type': 'checkDatabaseEncryptionKey',
+                'encryption_key': self._database_encryption_key,
+            }
 
         return self._send_data(data, result_id='updateAuthorizationState')
 

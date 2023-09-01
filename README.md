@@ -76,3 +76,37 @@ More information in the [documentation](http://python-telegram.readthedocs.io).
 ## Development
 
 See [CONTRIBUTING.md](/CONTRIBUTING.md).
+
+### build tdlib
+
+[build from github](https://github.com/tdlib/td#building) and provide path when calling *Telegram* client constructor.
+
+### Add-on to better call the raw tdlib API
+
+to further extend using raw TD-API use [raw_api.py](telegram/raw_api.py).
+
+example: 
+
+~~~python
+    from telegram.client import Telegram
+    from telegram.raw_api import Location, SearchChatsNearby
+    
+    tg = Telegram(
+        api_id=12345,
+        api_hash='api hash from my.telegram.org',
+        #phone=cfg['phonenumber'] # if not a bot ...,
+        bot_token='bot token from @BotFather',
+        files_directory='/path/to/dir/to/mantain/session/',
+        database_encryption_key='some secret string',
+        library_path='path/to/tdjson_library_compiled_for_your_arch')
+    )
+
+    # call searchChatsNearby
+    l = Location(1.2345, 6.7890)
+    fun = SearchChatsNearby(l)
+    res = tg.send_raw_api(fun)
+    res.wait()
+    # ...
+~~~
+
+> further raw api will be added if needed ....

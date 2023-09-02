@@ -1,27 +1,36 @@
-import base64
+import os
+import sys
 import enum
+import json
+import time
+import queue
+import base64
+import signal
+import typing
 import getpass
 import hashlib
-import json
 import logging
-import os
-import queue
-import signal
-import sys
 import threading
-import time
-import typing
-from collections import defaultdict
 from types import FrameType
-from typing import (Any, Callable, DefaultDict, Dict, List, Optional, Tuple,
-                    Type, Union)
+from typing import (
+    Any,
+    Dict,
+    List,
+    Type,
+    Tuple,
+    Union,
+    Callable,
+    Optional,
+    DefaultDict,
+)
+from collections import defaultdict
 
 from telegram import VERSION
-from telegram.raw_api import Object
-from telegram.tdjson import TDJson
 from telegram.text import Element
 from telegram.utils import AsyncResult
+from telegram.tdjson import TDJson
 from telegram.worker import BaseWorker, SimpleWorker
+from telegram.raw_api import Object
 
 if sys.version_info >= (3, 8):  # Backwards compatibility for python < 3.8
     from typing import Literal
@@ -463,6 +472,17 @@ class Telegram:
                 'revoke': revoke,
             }
         )
+
+    def get_supergroup(self, supergroup_id: int) -> AsyncResult:
+        """
+        Get basic info of a supergroup
+
+        Args:
+            supergroup_id
+        """
+        data = {'@type': 'getSupergroup', 'supergroup_id': supergroup_id}
+
+        return self._send_data(data)
 
     def get_supergroup_full_info(self, supergroup_id: int) -> AsyncResult:
         """

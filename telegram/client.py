@@ -1,4 +1,3 @@
-import os
 import sys
 import hashlib
 import time
@@ -9,6 +8,8 @@ import getpass
 import logging
 import base64
 import threading
+import tempfile
+from pathlib import Path
 from typing import (
     Any,
     Dict,
@@ -64,7 +65,7 @@ class Telegram:
         bot_token: Optional[str] = None,
         library_path: Optional[str] = None,
         worker: Optional[Type[BaseWorker]] = None,
-        files_directory: Optional[str] = None,
+        files_directory: Optional[Union[str, Path]] = None,
         use_test_dc: bool = False,
         use_message_database: bool = True,
         device_model: str = 'python-telegram',
@@ -127,9 +128,9 @@ class Telegram:
             str_to_encode: str = self.phone or self.bot_token  # type: ignore
             hasher.update(str_to_encode.encode('utf-8'))
             directory_name = hasher.hexdigest()
-            files_directory = f'/tmp/.tdlib_files/{directory_name}/'
+            files_directory = Path(tempfile.gettempdir()) / ".tdlib_files" / directory_name
 
-        self.files_directory = files_directory
+        self.files_directory = Path(files_directory)
 
         self._authorized = False
         self._stopped = threading.Event()
@@ -616,7 +617,6 @@ class Telegram:
             signal.SIGINT,
             signal.SIGTERM,
             signal.SIGABRT,
-            signal.SIGQUIT,
         ),
     ) -> None:
         """
@@ -736,9 +736,9 @@ class Telegram:
             'system_version': self.system_version,
             'application_version': self.application_version,
             'system_language_code': self.system_language_code,
-            'database_directory': os.path.join(self.files_directory, 'database'),
+            'database_directory': str(self.files_directory / "database"),
             'use_message_database': self.use_message_database,
-            'files_directory': os.path.join(self.files_directory, 'files'),
+            'files_directory': str(self.files_directory / "files"),
             'use_secret_chats': self.use_secret_chats,
         }
         data: Dict[str, typing.Any] = {

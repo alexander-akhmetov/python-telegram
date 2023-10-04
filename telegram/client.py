@@ -803,6 +803,11 @@ class Telegram:
                 '@type': 'checkDatabaseEncryptionKey',
                 'encryption_key': self._database_encryption_key,
             }
+        else:
+            data = {
+                '@type': 'checkDatabaseEncryptionKey',
+                'encryption_key': None
+            }
 
         return self._send_data(data, result_id='updateAuthorizationState')
 

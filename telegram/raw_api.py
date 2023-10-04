@@ -51,14 +51,14 @@ class Encoder(JSONEncoder):
 
 class Location(Object):
     """
-    Describes a location on planet Earth 
+    Describes a location on planet Earth
 
     Attributes:
         ID (:obj:`str`): ``Location``
 
     Args:
         latitude (:obj:`float`):
-            Latitude of the location in degrees; as defined by the sender 
+            Latitude of the location in degrees; as defined by the sender
         longitude (:obj:`float`):
             Longitude of the location, in degrees; as defined by the sender
 
@@ -71,7 +71,7 @@ class Location(Object):
     ID = "location"
 
     def __init__(self, latitude, longitude, **kwargs):
-        
+
         self.latitude = latitude  # float
         self.longitude = longitude  # float
 
@@ -83,7 +83,7 @@ class Location(Object):
 
 class SearchChatsNearby(Object):
     """
-    Returns a list of users and location-based supergroups nearby. The list of users nearby will be updated for 60 seconds after the request by the updates updateUsersNearby. The request should be sent again every 25 seconds with adjusted location to not miss new chats 
+    Returns a list of users and location-based supergroups nearby. The list of users nearby will be updated for 60 seconds after the request by the updates updateUsersNearby. The request should be sent again every 25 seconds with adjusted location to not miss new chats
 
     Attributes:
         ID (:obj:`str`): ``SearchChatsNearby``
@@ -108,3 +108,21 @@ class SearchChatsNearby(Object):
     def read(q: dict, *args) -> "SearchChatsNearby":
         location = Object.read(q.get('location'))
         return SearchChatsNearby(location)
+
+class GetSuperGroupMembers(Object):
+    ID = "getSupergroupMembers"
+
+    def __init__(self, supergroup_id, flt=None, offset=0, limit=200, extra=None, **kwargs):
+        self.extra = extra
+        self.supergroup_id = supergroup_id
+        self.offset = offset
+        self.filter = flt
+        self.limit = limit
+
+    @staticmethod
+    def read(q: dict, *args) -> "GetSuperGroupMembers":
+        _id = Object.read(q.get('supergroup_id'))
+        _offset = Object.read(q.get('offset'))
+        _limit = Object.read(q.get('limit'))
+        _filter = Object.read(q.get('filter'))
+        return GetSuperGroupMembers(_id, _filter, _offset, _limit)

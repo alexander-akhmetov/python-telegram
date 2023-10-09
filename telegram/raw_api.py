@@ -1,5 +1,5 @@
-from collections import OrderedDict
 from json import JSONEncoder, dumps
+from collections import OrderedDict
 
 
 class Object:
@@ -112,7 +112,7 @@ class SearchChatsNearby(Object):
 class GetSuperGroupMembers(Object):
     ID = "getSupergroupMembers"
 
-    def __init__(self, supergroup_id, flt=None, offset=0, limit=200, extra=None, **kwargs):
+    def __init__(self, supergroup_id: int, flt=None, offset: int=0, limit: int=200, extra=None, **kwargs):
         self.extra = extra
         self.supergroup_id = supergroup_id
         self.offset = offset
@@ -126,3 +126,37 @@ class GetSuperGroupMembers(Object):
         _limit = Object.read(q.get('limit'))
         _filter = Object.read(q.get('filter'))
         return GetSuperGroupMembers(_id, _filter, _offset, _limit)
+
+class GetChatHistory(Object):
+    ID = "getChatHistory"
+
+    def __init__(self, chat_id: int, from_message_id: int=0, offset: int=0, limit: int=100, only_local:bool=False, extra=None, **kwargs):
+        self.extra = extra
+        self.chat_id = chat_id
+        self.from_message_id = from_message_id
+        self.offset = offset
+        self.limit = limit
+        self.only_local = only_local
+
+    @staticmethod
+    def read(q: dict, *args) -> "GetChatHistory":
+        _id = Object.read(q.get('chat_id'))
+        _from_message_id = Object.read(q.get('from_message_id'))
+        _offset = Object.read(q.get('offset'))
+        _limit = Object.read(q.get('limit'))
+        _only_local = Object.read(q.get('only_local'))
+        return GetChatHistory(_id, _from_message_id, _offset, _limit, _only_local)
+
+class CreateSupergroupChat(Object):
+    ID = "createSupergroupChat"
+
+    def __init__(self, supergroup_id: int, force:bool=False, extra=None, **kwargs):
+        self.extra = extra
+        self.supergroup_id = supergroup_id
+        self.force = force
+
+    @staticmethod
+    def read(q: dict, *args) -> "CreateSupergroupChat":
+        _id = Object.read(q.get('supergroup_id'))
+        _force = Object.read(q.get('force'))
+        return CreateSupergroupChat(_id, _force)

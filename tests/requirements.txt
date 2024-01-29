@@ -3,5 +3,5 @@ flake8==6.1.0
 pylint==3.0.3
 ipdb==0.13.13
 mypy==1.8.0
-black==24.1.0
+black==24.1.1
 types-pkg-resources==0.1.3

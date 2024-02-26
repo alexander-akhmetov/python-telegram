@@ -1,4 +1,4 @@
-pytest==8.0.1
+pytest==8.0.2
 flake8==7.0.0
 pylint==3.0.3
 ipdb==0.13.13

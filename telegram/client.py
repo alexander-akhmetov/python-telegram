@@ -281,6 +281,26 @@ class Telegram:
 
         return self._send_data(data)
 
+    def send_photo(
+        self,
+        chat_id: int,
+        path: Union[str, Element],
+    ) -> AsyncResult:
+
+        data = {
+            '@type': 'sendMessage',
+            'chat_id': chat_id,
+            'input_message_content': {
+                '@type': 'inputMessagePhoto',
+                'photo': {
+                    '@type': 'inputFileLocal',
+                    'path': path,
+                },
+            },
+        }
+
+        return self._send_data(data)
+
     def import_contacts(self, contacts: List[Dict[str, str]]) -> AsyncResult:
         """
         Adds new contacts or edits existing contacts by their phone numbers.

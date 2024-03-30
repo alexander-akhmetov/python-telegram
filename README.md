@@ -14,7 +14,7 @@ It helps you build your own Telegram clients.
 
 ## Installation
 
-This library requires Python 3.8+ and Linux or MacOS.
+This library requires Python 3.8+ and Linux or MacOS. Windows is not supported.
 
 ```shell
 pip install python-telegram
@@ -65,6 +65,12 @@ result.wait()
 print(result.update)
 
 tg.stop()  # you must call `stop` at the end of the script
+```
+
+You can also use `call_method` to call any [tdlib method](https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1_function.html):
+
+``` python
+tg.call_method('getUser',  params={'user_id': user_id})
 ```
 
 More examples you can find in the [/examples/ directory](/examples/).

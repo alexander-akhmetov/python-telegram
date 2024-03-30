@@ -9,3 +9,5 @@ recursive-include telegram/lib *
 recursive-include docs *
 
 global-exclude *.pyc
+
+include telegram/py.typed

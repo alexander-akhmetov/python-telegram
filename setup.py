@@ -32,6 +32,7 @@ setup(
         'telegram': [
             'lib/darwin/*',
             'lib/linux/*',
+            'py.typed',
         ],
     },
     install_requires=[

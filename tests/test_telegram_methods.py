@@ -168,7 +168,7 @@ class TestTelegram:
 
         telegram.add_message_handler(my_handler)
 
-        with patch.object(telegram._workers_queue, 'put') as mocked_put:
+        with patch.object(telegram.worker.queue, 'put') as mocked_put:
             update = {'@type': MESSAGE_HANDLER_TYPE}
             telegram._run_handlers(update)
 
@@ -180,7 +180,7 @@ class TestTelegram:
 
         telegram.add_message_handler(my_handler)
 
-        with patch.object(telegram._workers_queue, 'put') as mocked_put:
+        with patch.object(telegram.worker.queue, 'put') as mocked_put:
             update = {'@type': 'some-type'}
             telegram._run_handlers(update)
 

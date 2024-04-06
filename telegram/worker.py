@@ -18,10 +18,6 @@ class BaseWorker:
         self._queue = queue
 
     @property
-    def is_enabled(self) -> bool:
-        return self._is_enabled
-
-    @property
     def queue(self) -> Queue:
         return self._queue
 

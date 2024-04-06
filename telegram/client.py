@@ -138,10 +138,8 @@ class Telegram:
         if not worker:
             worker = SimpleWorker
             self.worker: BaseWorker = worker(queue=queue.Queue(maxsize=default_workers_queue_size))
-        elif worker.is_enabled: # Initialized worker
-            self.worker = worker
         else:
-            self.worker = worker(queue=queue.Queue(maxsize=default_workers_queue_size))
+            self.worker = worker
 
         self._results: Dict[str, AsyncResult] = {}
         self._update_handlers: DefaultDict[str, List[Callable]] = defaultdict(list)

@@ -30,7 +30,8 @@ setup(
     ],
     package_data={
         'telegram': [
-            'lib/darwin/*',
+            'lib/darwin/x86_64/*',
+            'lib/darwin/arm64/*',
             'lib/linux/*',
             'py.typed',
         ],

@@ -17,7 +17,8 @@ def _get_tdjson_lib_path() -> str:
         return system_library
 
     if platform.system().lower() == 'darwin':
-        lib_name = 'darwin/libtdjson.dylib'
+        platform_architecture = platform.machine()
+        lib_name = f'darwin/{platform_architecture}/libtdjson.dylib'
     else:
         lib_name = 'linux/libtdjson.so'
 

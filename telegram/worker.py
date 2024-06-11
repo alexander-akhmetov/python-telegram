@@ -17,6 +17,10 @@ class BaseWorker:
         self._is_enabled = True
         self._queue = queue
 
+    @property
+    def queue(self) -> Queue:
+        return self._queue
+
     def run(self) -> None:
         raise NotImplementedError()
 

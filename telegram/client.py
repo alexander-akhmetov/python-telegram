@@ -135,12 +135,11 @@ class Telegram:
         self._authorized = False
         self._stopped = threading.Event()
 
-        # todo: move to worker
-        self._workers_queue: queue.Queue = queue.Queue(maxsize=default_workers_queue_size)
-
         if not worker:
             worker = SimpleWorker
-        self.worker: BaseWorker = worker(queue=self._workers_queue)
+            self.worker: BaseWorker = worker(queue=queue.Queue(maxsize=default_workers_queue_size))
+        else:
+            self.worker = worker
 
         self._results: Dict[str, AsyncResult] = {}
         self._update_handlers: DefaultDict[str, List[Callable]] = defaultdict(list)
@@ -563,7 +562,7 @@ class Telegram:
         update_type: str = update.get('@type', 'unknown')
 
         for handler in self._update_handlers[update_type]:
-            self._workers_queue.put((handler, update), timeout=self._queue_put_timeout)
+            self.worker.queue.put((handler, update), timeout=self._queue_put_timeout)
 
     def remove_update_handler(self, handler_type: str, func: Callable) -> None:
         """

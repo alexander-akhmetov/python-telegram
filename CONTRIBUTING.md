@@ -22,8 +22,7 @@ Try to include steps to reproduce the bug, a detailed description, and some samp
 
 ## Coding style
 
-The project uses [black](https://github.com/psf/black) as an autoformatter
-and checker, along with a few linters.
+The project uses [ruff](https://docs.astral.sh/ruff/) as an autoformatter and linter.
 
 ## Tests
 

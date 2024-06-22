@@ -8,28 +8,28 @@ from telegram.client import Telegram, MESSAGE_HANDLER_TYPE, AuthorizationState
 from telegram.text import Spoiler
 
 API_ID = 1
-API_HASH = 'hash'
-PHONE = '+71234567890'
-LIBRARY_PATH = '/lib/'
-DATABASE_ENCRYPTION_KEY = 'changeme1234'
+API_HASH = "hash"
+PHONE = "+71234567890"
+LIBRARY_PATH = "/lib/"
+DATABASE_ENCRYPTION_KEY = "changeme1234"
 
 
 @pytest.fixture
 def telegram():
-    with patch('telegram.client.TDJson'):
-        with patch('telegram.client.threading'):
+    with patch("telegram.client.TDJson"):
+        with patch("telegram.client.threading"):
             return _get_telegram_instance()
 
 
 def _get_telegram_instance(**kwargs):
-    kwargs.setdefault('api_id', API_ID)
-    kwargs.setdefault('api_hash', API_HASH)
-    kwargs.setdefault('phone', PHONE)
-    kwargs.setdefault('library_path', LIBRARY_PATH)
-    kwargs.setdefault('database_encryption_key', DATABASE_ENCRYPTION_KEY)
+    kwargs.setdefault("api_id", API_ID)
+    kwargs.setdefault("api_hash", API_HASH)
+    kwargs.setdefault("phone", PHONE)
+    kwargs.setdefault("library_path", LIBRARY_PATH)
+    kwargs.setdefault("database_encryption_key", DATABASE_ENCRYPTION_KEY)
 
-    with patch('telegram.client.TDJson'):
-        with patch('telegram.client.threading'):
+    with patch("telegram.client.TDJson"):
+        with patch("telegram.client.threading"):
             tg = Telegram(**kwargs)
 
     return tg
@@ -44,45 +44,45 @@ class TestTelegram:
                 library_path=LIBRARY_PATH,
                 database_encryption_key=DATABASE_ENCRYPTION_KEY,
             )
-            assert 'You must provide bot_token or phone' in str(excinfo.value)
+            assert "You must provide bot_token or phone" in str(excinfo.value)
 
     def test_send_message(self, telegram):
         chat_id = 1
-        text = 'Hello world'
+        text = "Hello world"
 
         async_result = telegram.send_message(chat_id=chat_id, text=text)
 
         exp_data = {
-            '@type': 'sendMessage',
-            'chat_id': chat_id,
-            'input_message_content': {
-                '@type': 'inputMessageText',
-                'text': {
-                    '@type': 'formattedText',
-                    'text': text,
-                    'entities': [],
+            "@type": "sendMessage",
+            "chat_id": chat_id,
+            "input_message_content": {
+                "@type": "inputMessageText",
+                "text": {
+                    "@type": "formattedText",
+                    "text": text,
+                    "entities": [],
                 },
             },
-            '@extra': {
-                'request_id': async_result.id,
+            "@extra": {
+                "request_id": async_result.id,
             },
         }
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
 
     def test_parse_text_entities(self, telegram):
-        text = Spoiler('Hello world!').to_html()
+        text = Spoiler("Hello world!").to_html()
 
-        async_result = telegram.parse_text_entities(text=text, parse_mode='HTML')
+        async_result = telegram.parse_text_entities(text=text, parse_mode="HTML")
 
         exp_data = {
-            '@type': 'parseTextEntities',
-            'text': '<span class="tg-spoiler">Hello world!</span>',
-            'parse_mode': {
-                '@type': 'textParseModeHTML',
+            "@type": "parseTextEntities",
+            "text": '<span class="tg-spoiler">Hello world!</span>',
+            "parse_mode": {
+                "@type": "textParseModeHTML",
             },
-            '@extra': {
-                'request_id': async_result.id,
+            "@extra": {
+                "request_id": async_result.id,
             },
         }
 
@@ -90,8 +90,8 @@ class TestTelegram:
 
     def test_send_phone_number_or_bot_token(self, telegram):
         # check that the dunction calls _send_phone_number or _send_bot_token
-        with patch.object(telegram, '_send_phone_number'), patch.object(telegram, '_send_bot_token'):
-            telegram.phone = '123'
+        with patch.object(telegram, "_send_phone_number"), patch.object(telegram, "_send_bot_token"):
+            telegram.phone = "123"
             telegram.bot_token = None
 
             telegram._send_phone_number_or_bot_token()
@@ -100,19 +100,19 @@ class TestTelegram:
             assert telegram._send_bot_token.call_count == 0
 
             telegram.phone = None
-            telegram.bot_token = 'some-token'
+            telegram.bot_token = "some-token"
 
             telegram._send_phone_number_or_bot_token()
             telegram._send_bot_token.assert_called_once()
 
     def test_send_bot_token(self, telegram):
-        telegram.bot_token = 'some-token'
+        telegram.bot_token = "some-token"
 
-        with patch.object(telegram, '_send_data'):
+        with patch.object(telegram, "_send_data"):
             telegram._send_bot_token()
 
-            exp_data = {'@type': 'checkAuthenticationBotToken', 'token': 'some-token'}
-            telegram._send_data.assert_called_once_with(exp_data, result_id='updateAuthorizationState')
+            exp_data = {"@type": "checkAuthenticationBotToken", "token": "some-token"}
+            telegram._send_data.assert_called_once_with(exp_data, result_id="updateAuthorizationState")
 
     def test_add_message_handler(self, telegram):
         # check that add_message_handler
@@ -152,7 +152,7 @@ class TestTelegram:
     def test_add_update_handler(self, telegram):
         # check that add_update_handler function
         # appends passsed func to _update_handlers[type] list
-        my_update_type = 'update'
+        my_update_type = "update"
         assert telegram._update_handlers[my_update_type] == []
 
         def my_handler():
@@ -168,8 +168,8 @@ class TestTelegram:
 
         telegram.add_message_handler(my_handler)
 
-        with patch.object(telegram._workers_queue, 'put') as mocked_put:
-            update = {'@type': MESSAGE_HANDLER_TYPE}
+        with patch.object(telegram._workers_queue, "put") as mocked_put:
+            update = {"@type": MESSAGE_HANDLER_TYPE}
             telegram._run_handlers(update)
 
             mocked_put.assert_called_once_with((my_handler, update), timeout=10)
@@ -180,34 +180,34 @@ class TestTelegram:
 
         telegram.add_message_handler(my_handler)
 
-        with patch.object(telegram._workers_queue, 'put') as mocked_put:
-            update = {'@type': 'some-type'}
+        with patch.object(telegram._workers_queue, "put") as mocked_put:
+            update = {"@type": "some-type"}
             telegram._run_handlers(update)
 
             assert mocked_put.call_count == 0
 
     def test_call_method(self, telegram):
-        method_name = 'someMethod'
-        params = {'param_1': 'value_1', 'param_2': 2}
+        method_name = "someMethod"
+        params = {"param_1": "value_1", "param_2": 2}
 
         async_result = telegram.call_method(method_name=method_name, params=params)
 
-        exp_data = {'@type': method_name, '@extra': {'request_id': async_result.id}}
+        exp_data = {"@type": method_name, "@extra": {"request_id": async_result.id}}
         exp_data.update(params)
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
 
     def test_get_web_page_instant_view(self, telegram):
-        url = 'https://yandex.ru/'
+        url = "https://yandex.ru/"
         force_full = False
 
         async_result = telegram.get_web_page_instant_view(url=url, force_full=force_full)
 
         exp_data = {
-            '@type': 'getWebPageInstantView',
-            'url': url,
-            'force_full': force_full,
-            '@extra': {'request_id': async_result.id},
+            "@type": "getWebPageInstantView",
+            "url": url,
+            "force_full": force_full,
+            "@extra": {"request_id": async_result.id},
         }
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
@@ -215,7 +215,7 @@ class TestTelegram:
     def test_get_me(self, telegram):
         async_result = telegram.get_me()
 
-        exp_data = {'@type': 'getMe', '@extra': {'request_id': async_result.id}}
+        exp_data = {"@type": "getMe", "@extra": {"request_id": async_result.id}}
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
 
@@ -225,9 +225,9 @@ class TestTelegram:
         async_result = telegram.get_user(user_id=user_id)
 
         exp_data = {
-            '@type': 'getUser',
-            'user_id': user_id,
-            '@extra': {'request_id': async_result.id},
+            "@type": "getUser",
+            "user_id": user_id,
+            "@extra": {"request_id": async_result.id},
         }
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
@@ -238,9 +238,9 @@ class TestTelegram:
         async_result = telegram.get_user_full_info(user_id=user_id)
 
         exp_data = {
-            '@type': 'getUserFullInfo',
-            'user_id': user_id,
-            '@extra': {'request_id': async_result.id},
+            "@type": "getUserFullInfo",
+            "user_id": user_id,
+            "@extra": {"request_id": async_result.id},
         }
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
@@ -251,9 +251,9 @@ class TestTelegram:
         async_result = telegram.get_chat(chat_id=chat_id)
 
         exp_data = {
-            '@type': 'getChat',
-            'chat_id': chat_id,
-            '@extra': {'request_id': async_result.id},
+            "@type": "getChat",
+            "chat_id": chat_id,
+            "@extra": {"request_id": async_result.id},
         }
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
@@ -266,11 +266,11 @@ class TestTelegram:
         async_result = telegram.get_chats(offset_order=offset_order, offset_chat_id=offset_chat_id, limit=limit)
 
         exp_data = {
-            '@type': 'getChats',
-            'offset_order': offset_order,
-            'offset_chat_id': offset_chat_id,
-            'limit': limit,
-            '@extra': {'request_id': async_result.id},
+            "@type": "getChats",
+            "offset_order": offset_order,
+            "offset_chat_id": offset_chat_id,
+            "limit": limit,
+            "@extra": {"request_id": async_result.id},
         }
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
@@ -291,50 +291,50 @@ class TestTelegram:
         )
 
         exp_data = {
-            '@type': 'getChatHistory',
-            'chat_id': chat_id,
-            'limit': limit,
-            'from_message_id': from_message_id,
-            'offset': offset,
-            'only_local': only_local,
-            '@extra': {'request_id': async_result.id},
+            "@type": "getChatHistory",
+            "chat_id": chat_id,
+            "limit": limit,
+            "from_message_id": from_message_id,
+            "offset": offset,
+            "only_local": only_local,
+            "@extra": {"request_id": async_result.id},
         }
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
 
     @patch("telegram.client.tempfile.gettempdir", return_value="/tmp")
     def test_set_initial_params(self, _mocked_gettempdir):
-        telegram = _get_telegram_instance(database_encryption_key='key')
+        telegram = _get_telegram_instance(database_encryption_key="key")
         async_result = telegram._set_initial_params()
-        phone_md5 = '69560384b84c896952ef20352fbce705'
+        phone_md5 = "69560384b84c896952ef20352fbce705"
 
         parameters = {
-            'use_test_dc': False,
-            'api_id': API_ID,
-            'api_hash': API_HASH,
-            'device_model': 'python-telegram',
-            'system_version': 'unknown',
-            'application_version': VERSION,
-            'system_language_code': 'en',
-            'database_directory': f'/tmp/.tdlib_files/{phone_md5}/database',
-            'use_message_database': True,
-            'files_directory': f'/tmp/.tdlib_files/{phone_md5}/files',
-            'use_secret_chats': True,
+            "use_test_dc": False,
+            "api_id": API_ID,
+            "api_hash": API_HASH,
+            "device_model": "python-telegram",
+            "system_version": "unknown",
+            "application_version": VERSION,
+            "system_language_code": "en",
+            "database_directory": f"/tmp/.tdlib_files/{phone_md5}/database",
+            "use_message_database": True,
+            "files_directory": f"/tmp/.tdlib_files/{phone_md5}/files",
+            "use_secret_chats": True,
         }
         exp_data = {
-            '@type': 'setTdlibParameters',
-            'parameters': parameters,
+            "@type": "setTdlibParameters",
+            "parameters": parameters,
             **parameters,
-            'database_encryption_key': 'a2V5',
-            '@extra': {'request_id': 'updateAuthorizationState'},
+            "database_encryption_key": "a2V5",
+            "@extra": {"request_id": "updateAuthorizationState"},
         }
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
-        assert async_result.id == 'updateAuthorizationState'
+        assert async_result.id == "updateAuthorizationState"
 
     @pytest.mark.parametrize(
-        'key, exp_key',
-        [('key', 'a2V5'), (b'byte-key', 'Ynl0ZS1rZXk='), ('', ''), (b'', '')],
+        "key, exp_key",
+        [("key", "a2V5"), (b"byte-key", "Ynl0ZS1rZXk="), ("", ""), (b"", "")],
     )
     def test_send_encryption_key(self, key, exp_key):
         # check that _send_encryption_key calls tdlib with
@@ -344,9 +344,9 @@ class TestTelegram:
         tg._send_encryption_key()
 
         exp_data = {
-            '@type': 'checkDatabaseEncryptionKey',
-            'encryption_key': exp_key,
-            '@extra': {'request_id': 'updateAuthorizationState'},
+            "@type": "checkDatabaseEncryptionKey",
+            "encryption_key": exp_key,
+            "@extra": {"request_id": "updateAuthorizationState"},
         }
 
         tg._tdjson.send.assert_called_once_with(exp_data)
@@ -360,22 +360,22 @@ class TestTelegram__update_async_result:
 
         assert async_result.id in telegram._results
 
-        update = {'@extra': {'request_id': async_result.id}}
+        update = {"@extra": {"request_id": async_result.id}}
         new_async_result = telegram._update_async_result(update=update)
 
         assert async_result == new_async_result
 
     def test_result_id_should_be_replaced_if_it_is_auth_process(self, telegram):
-        async_result = AsyncResult(client=telegram, result_id='updateAuthorizationState')
-        telegram._results['updateAuthorizationState'] = async_result
+        async_result = AsyncResult(client=telegram, result_id="updateAuthorizationState")
+        telegram._results["updateAuthorizationState"] = async_result
 
         update = {
-            '@type': 'updateAuthorizationState',
-            '@extra': {'request_id': 'blablabla'},
+            "@type": "updateAuthorizationState",
+            "@extra": {"request_id": "blablabla"},
         }
         new_async_result = telegram._update_async_result(update=update)
 
-        assert new_async_result.id == 'updateAuthorizationState'
+        assert new_async_result.id == "updateAuthorizationState"
 
 
 class TestTelegram__login:
@@ -399,24 +399,24 @@ class TestTelegram__login:
 
         # login process chain
         telegram.get_authorization_state = lambda: _get_async_result(
-            data={'@type': 'authorizationStateWaitTdlibParameters'},
-            request_id='getAuthorizationState',
+            data={"@type": "authorizationStateWaitTdlibParameters"},
+            request_id="getAuthorizationState",
         )
 
         telegram._set_initial_params = lambda: _get_async_result(
-            data={'authorization_state': {'@type': 'authorizationStateWaitEncryptionKey'}}
+            data={"authorization_state": {"@type": "authorizationStateWaitEncryptionKey"}}
         )
         telegram._send_encryption_key = lambda: _get_async_result(
-            data={'authorization_state': {'@type': 'authorizationStateWaitPhoneNumber'}}
+            data={"authorization_state": {"@type": "authorizationStateWaitPhoneNumber"}}
         )
         telegram._send_phone_number_or_bot_token = lambda: _get_async_result(
-            data={'authorization_state': {'@type': 'authorizationStateWaitCode'}}
+            data={"authorization_state": {"@type": "authorizationStateWaitCode"}}
         )
         telegram._send_telegram_code = lambda: _get_async_result(
-            data={'authorization_state': {'@type': 'authorizationStateWaitPassword'}}
+            data={"authorization_state": {"@type": "authorizationStateWaitPassword"}}
         )
         telegram._send_password = lambda: _get_async_result(
-            data={'authorization_state': {'@type': 'authorizationStateReady'}}
+            data={"authorization_state": {"@type": "authorizationStateReady"}}
         )
 
         telegram.login()
@@ -439,40 +439,40 @@ class TestTelegram__login_non_blocking:
 
         # login process chain
         telegram.get_authorization_state = lambda: _get_async_result(
-            data={'@type': 'authorizationStateWaitTdlibParameters'},
-            request_id='getAuthorizationState',
+            data={"@type": "authorizationStateWaitTdlibParameters"},
+            request_id="getAuthorizationState",
         )
 
         telegram._set_initial_params = lambda: _get_async_result(
-            data={'authorization_state': {'@type': 'authorizationStateWaitEncryptionKey'}}
+            data={"authorization_state": {"@type": "authorizationStateWaitEncryptionKey"}}
         )
         telegram._send_encryption_key = lambda: _get_async_result(
-            data={'authorization_state': {'@type': 'authorizationStateWaitPhoneNumber'}}
+            data={"authorization_state": {"@type": "authorizationStateWaitPhoneNumber"}}
         )
         telegram._send_phone_number_or_bot_token = lambda: _get_async_result(
-            data={'authorization_state': {'@type': 'authorizationStateWaitCode'}}
+            data={"authorization_state": {"@type": "authorizationStateWaitCode"}}
         )
         telegram._send_telegram_code = lambda _: _get_async_result(
-            data={'authorization_state': {'@type': 'authorizationStateWaitRegistration'}}
+            data={"authorization_state": {"@type": "authorizationStateWaitRegistration"}}
         )
         telegram._register_user = lambda _, __: _get_async_result(
-            data={'authorization_state': {'@type': 'authorizationStateWaitPassword'}}
+            data={"authorization_state": {"@type": "authorizationStateWaitPassword"}}
         )
         telegram._send_password = lambda _: _get_async_result(
-            data={'authorization_state': {'@type': 'authorizationStateReady'}}
+            data={"authorization_state": {"@type": "authorizationStateReady"}}
         )
 
         state = telegram.login(blocking=False)
         assert state == AuthorizationState.WAIT_CODE
-        telegram.send_code('123')
+        telegram.send_code("123")
 
         state = telegram.login(blocking=False)
         assert state == AuthorizationState.WAIT_REGISTRATION
-        telegram.register_user('new', 'user')
+        telegram.register_user("new", "user")
 
         state = telegram.login(blocking=False)
         assert state == AuthorizationState.WAIT_PASSWORD
-        telegram.send_password('456')
+        telegram.send_password("456")
 
         state = telegram.login(blocking=False)
         assert state == telegram.authorization_state == AuthorizationState.READY

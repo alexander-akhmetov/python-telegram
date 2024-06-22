@@ -14,7 +14,7 @@ It helps you build your own Telegram clients.
 
 ## Installation
 
-This library requires Python 3.8+ and Linux or MacOS. Windows is not supported.
+This library requires Python 3.9+ and Linux or MacOS. Windows is not supported.
 
 ```shell
 pip install python-telegram

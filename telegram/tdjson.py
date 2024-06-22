@@ -4,8 +4,7 @@ import platform
 import ctypes.util
 from ctypes import CDLL, CFUNCTYPE, c_int, c_char_p, c_double, c_void_p, c_longlong
 from typing import Any, Dict, Optional, Union
-
-import pkg_resources
+import importlib.resources
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ def _get_tdjson_lib_path() -> str:
     else:
         lib_name = 'linux/libtdjson.so'
 
-    return pkg_resources.resource_filename('telegram', f'lib/{lib_name}')
+    return importlib.resources.files('telegram').joinpath(f'lib/{lib_name}')
 
 
 class TDJson:

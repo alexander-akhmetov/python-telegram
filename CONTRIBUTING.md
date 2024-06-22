@@ -38,5 +38,5 @@ tox
 Run a specific test using python 3.12:
 
 ```shell
-tox -e py311 -- -k test_add_message_handler
+tox -e py312 -- -k test_add_message_handler
 ```

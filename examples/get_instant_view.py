@@ -12,21 +12,21 @@ Usage:
 """
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     setup_logging(level=logging.INFO)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('api_id', help='API id')  # https://my.telegram.org/apps
-    parser.add_argument('api_hash', help='API hash')
-    parser.add_argument('phone', help='Phone')
-    parser.add_argument('url', help='Webpage URL')
+    parser.add_argument("api_id", help="API id")  # https://my.telegram.org/apps
+    parser.add_argument("api_hash", help="API hash")
+    parser.add_argument("phone", help="Phone")
+    parser.add_argument("url", help="Webpage URL")
     args = parser.parse_args()
 
     tg = Telegram(
         api_id=args.api_id,
         api_hash=args.api_hash,
         phone=args.phone,
-        database_encryption_key='changeme1234',
+        database_encryption_key="changeme1234",
     )
     # you must call login method before others
     tg.login()
@@ -39,10 +39,10 @@ if __name__ == '__main__':
 
     result.wait()
     if result.error:
-        print(f'error: {result.error_info}')
+        print(f"error: {result.error_info}")
     else:
-        print('Instant view: ')
-        short_text = result.update['page_blocks'][0]['title']['text']
-        print(f'\n    {short_text}')
+        print("Instant view: ")
+        short_text = result.update["page_blocks"][0]["title"]["text"]
+        print(f"\n    {short_text}")
 
     tg.stop()

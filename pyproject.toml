@@ -2,7 +2,5 @@
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
-[tool.black]
+[tool.ruff]
 line-length = 119
-target_version = ['py39', 'py310', 'py311', 'py312']
-skip-string-normalization = true

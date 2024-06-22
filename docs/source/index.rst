@@ -35,7 +35,7 @@ After building the library, you need to install it:
 Library installation
 ~~~~~~~~~~~~~~~~~~~~
 
-This library requires Python 3.8 or higher.
+This library requires Python 3.9 or higher.
 
 .. code-block:: bash
 

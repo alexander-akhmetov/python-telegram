@@ -10,17 +10,7 @@ import base64
 import threading
 import tempfile
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    List,
-    Type,
-    Callable,
-    Optional,
-    DefaultDict,
-    Union,
-    Tuple,
-)
+from typing import Any, Dict, List, Type, Callable, Optional, DefaultDict, Union, Tuple, Literal
 from types import FrameType
 from collections import defaultdict
 import enum
@@ -31,10 +21,6 @@ from telegram.tdjson import TDJson
 from telegram.worker import BaseWorker, SimpleWorker
 from telegram.text import Element
 
-if sys.version_info >= (3, 8):  # Backwards compatibility for python < 3.8
-    from typing import Literal
-else:
-    from typing_extensions import Literal
 
 logger = logging.getLogger(__name__)
 

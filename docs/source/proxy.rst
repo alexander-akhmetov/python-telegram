@@ -7,7 +7,7 @@ Proxy
 How to use a proxy with tdlib
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Define proxy parameters and pass them to ``Telegram``:
+To use a proxy with tdlib, define the proxy parameters and pass them to the ``Telegram`` class:
 
 .. code-block:: python
 

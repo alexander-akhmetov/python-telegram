@@ -13,9 +13,9 @@ Install the library:
 
      python3 -m pip install python-telegram
 
-Let's create a simple echo-bot, which sends "pong" when it receives "ping".
+Let's create a simple echo-bot that sends "pong" when it receives "ping".
 
-Initialize a new telegram client with your credentials:
+Initialize a new Telegram client with your credentials:
 
 .. code-block:: python
 
@@ -29,32 +29,31 @@ Initialize a new telegram client with your credentials:
     )
 
 .. note::
-    The library (actually ``tdlib``) stores messages database and received files in the ``/tmp/.tdlib_files/{phone_number}/``.
+    The library configures ``tdlib`` to store the messages database and received files in the ``/tmp/.tdlib_files/{phone_number}/``.
     You can change this behaviour with the ``files_directory`` parameter.
 
 .. note::
-    You can use bot tokens: just pass ``bot_token`` instead of ``phone``.
+    You can pass bot tokens by passing ``bot_token`` instead of ``phone``.
 
-After that, you have to login:
+Now you need to login to the Telegram. You can do it by calling the `login` method:
 
 .. code-block:: python
 
     tg.login()
 
-In this example we use a blocking version of the `login` function.  You can find an example for non-blocking usage here: :ref:`non_blocking_login`.
-Telegram will send you a code in an SMS or as a Telegram message. If you have enabled 2FA, you will be asked for your password too. After successful login you can start using the library:
+In this example, we use a blocking version of the ``login`` function. You can find an example for non-blocking usage here: :ref:`non_blocking_login`.
+Telegram will send you a code via SMS or as a Telegram message. If you have enabled 2FA, you will also be asked for your password. After successful login, you can start using the library:
 
 .. code-block:: python
 
-    # this function will be called
-    # for each received message
+    # This function will be called for each received message.
     def new_message_handler(update):
         print('New message!')
 
     tg.add_message_handler(new_message_handler)
-    tg.idle()  # blocking waiting for CTRL+C
+    tg.idle()  # Blocking, waiting for CTRL+C.
 
-This code adds a new message handler which prints a simple text every time it receives a new message.
+This code adds a new message handler that prints a simple text every time it receives a new message.
 ``tg.idle()`` is neccessary to block your script and wait for an exit shortcut (``CTRL+C``).
 
 If you run this code, you will see something like that:
@@ -69,7 +68,7 @@ Let's add more logic to the message handler:
 .. code-block:: python
 
     def new_message_handler(update):
-        # we want to process only text messages
+        # We want to process only text messages.
         message_content = update['message']['content'].get('text', {})
         message_text = message_content.get('text', '').lower()
         is_outgoing = update['message']['is_outgoing']
@@ -97,7 +96,7 @@ Full code of our new bot:
     tg.login()
 
     def new_message_handler(update):
-        # we want to process only text messages
+        # We want to process only text messages.
         message_content = update['message']['content'].get('text', {})
         message_text = message_content.get('text', '').lower()
         is_outgoing = update['message']['is_outgoing']

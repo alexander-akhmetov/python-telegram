@@ -1,6 +1,52 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "python-telegram"
+dynamic = ["version"]
+description = "Python library to help you build your own Telegram clients"
+readme = "README.md"
+authors = [{name = "Alexander Akhmetov", email = "me@alx.cx"}]
+license = {text = "MIT"}
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+keywords = ["telegram", "client", "api", "tdlib", "tdjson", "td"]
+dependencies = [
+    "telegram-text==0.2.0",
+]
+requires-python = ">=3.9"
+
+[project.urls]
+Source = "https://github.com/alexander-akhmetov/python-telegram"
+Documentation = "https://python-telegram.readthedocs.io/en/latest/"
+Tutorial = "https://python-telegram.readthedocs.io/en/latest/tutorial.html"
+Changelog = "https://python-telegram.readthedocs.io/en/latest/changelog.html"
+
+[tool.setuptools]
+packages = ["telegram"]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.package-data]
+telegram = [
+    "lib/darwin/*",
+    "lib/linux/*",
+    "py.typed",
+]
+
+[tool.setuptools_scm]
+write_to = "telegram/_version.py"
 
 [tool.ruff]
 line-length = 119

@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 # -- Project information -----------------------------------------------------
 
 project = "python-telegram"
-copyright = "2018, Alexander Akhmetov"
+copyright = "2024, Alexander Akhmetov"
 author = "Alexander Akhmetov"
 
 html_show_sourcelink = False
@@ -41,9 +41,7 @@ release = ""
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [
-    "sphinx.ext.autodoc",
-]
+extensions = ["sphinx.ext.autodoc", "sphinx_immaterial"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -78,7 +76,7 @@ pygments_style = "sphinx"
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "alabaster"
+html_theme = "sphinx_immaterial"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -97,6 +95,10 @@ html_theme_options = {
         "DockerHub": "https://hub.docker.com/r/akhmetov/python-telegram/",
         "PyPi": "https://pypi.org/project/python-telegram/",
         "2": "",
+    },
+    "palette": {
+        "primary": "deep-orange",
+        "accent": "deep-orange",
     },
 }
 
@@ -163,7 +165,9 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "python-telegram", "python-telegram Documentation", [author], 1)]
+man_pages = [
+    (master_doc, "python-telegram", "python-telegram Documentation", [author], 1)
+]
 
 
 # -- Options for Texinfo output ----------------------------------------------

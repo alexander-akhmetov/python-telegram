@@ -9,3 +9,4 @@ MANIFEST
 *.pyc
 .DS_Store
 .vscode
+telegram/_version.py

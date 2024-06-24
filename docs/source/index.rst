@@ -13,19 +13,19 @@ Welcome to python-telegram's documentation
    proxy
    changelog
 
-Client for the `tdlib <https://github.com/tdlib/td>`_ library (at very early stage :) ).
+Client for the `tdlib <https://github.com/tdlib/td>`_ library.
 
 Installation
 ------------
 
-At first you must install ``tdlib``.
+First you need to install ``tdlib``.
 
 How to build tdlib
 ~~~~~~~~~~~~~~~~~~
 
 `Official documentation <https://github.com/tdlib/td#building>`_
 
-Do not forget install it after:
+After building the library, you need to install it:
 
 .. code-block:: bash
 
@@ -35,26 +35,26 @@ Do not forget install it after:
 Library installation
 ~~~~~~~~~~~~~~~~~~~~
 
-This library works with Python 3.8+ only.
+This library requires Python 3.9 or higher.
 
 .. code-block:: bash
 
      python3 -m pip install python-telegram
 
-After you must `register <http://my.telegram.org/apps/>`_ a new Telegram application.
+Next, you need to `register <http://my.telegram.org/apps/>`_ a new Telegram application.
 
 Now you can start using the library: :ref:`tutorial`.
 
 .. note::
-    You can find more examples `here <https://github.com/alexander-akhmetov/python-telegram/tree/master/examples>`_.
+    More examples can be found `here <https://github.com/alexander-akhmetov/python-telegram/tree/master/examples>`_.
 
 .. note::
-    The ``tdlib`` binary for Linux provided by ``python-shortcuts`` is built on Ubuntu with libc since version ``0.10.0``. Before ``0.10.0``, Alpine Linux was used with ``musl``.
+    The ``tdlib`` binary for Linux provided by ``python-shortcuts`` has been built on Ubuntu with libc strating from version ``0.10.0``. Versions before ``0.10.0`` were built on Alpine Linux with ``musl``.
 
 Docker
 ------
 
-This library has a `docker image <https://hub.docker.com/r/akhmetov/python-telegram/>`_
+A Docker image for this library is available `here <https://hub.docker.com/r/akhmetov/python-telegram/>`_
 
 .. code-block:: bash
 

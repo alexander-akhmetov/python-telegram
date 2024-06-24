@@ -1,7 +1,5 @@
-pytest==8.1.1
-flake8==7.0.0
-pylint==3.1.0
+ruff==0.4.10
+pytest==8.2.2
 ipdb==0.13.13
-mypy==1.9.0
-black==24.3.0
+mypy==1.10.0
 types-pkg-resources==0.1.3

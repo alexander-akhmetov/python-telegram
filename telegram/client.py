@@ -1,4 +1,3 @@
-import sys
 import hashlib
 import time
 import queue
@@ -20,6 +19,7 @@ from typing import (
     DefaultDict,
     Union,
     Tuple,
+    Literal,
 )
 from types import FrameType
 from collections import defaultdict
@@ -31,28 +31,24 @@ from telegram.tdjson import TDJson
 from telegram.worker import BaseWorker, SimpleWorker
 from telegram.text import Element
 
-if sys.version_info >= (3, 8):  # Backwards compatibility for python < 3.8
-    from typing import Literal
-else:
-    from typing_extensions import Literal
 
 logger = logging.getLogger(__name__)
 
 
-MESSAGE_HANDLER_TYPE: str = 'updateNewMessage'
+MESSAGE_HANDLER_TYPE: str = "updateNewMessage"
 
 
 class AuthorizationState(enum.Enum):
     NONE = None
-    WAIT_CODE = 'authorizationStateWaitCode'
-    WAIT_PASSWORD = 'authorizationStateWaitPassword'
-    WAIT_TDLIB_PARAMETERS = 'authorizationStateWaitTdlibParameters'
-    WAIT_ENCRYPTION_KEY = 'authorizationStateWaitEncryptionKey'
-    WAIT_PHONE_NUMBER = 'authorizationStateWaitPhoneNumber'
-    WAIT_REGISTRATION = 'authorizationStateWaitRegistration'
-    READY = 'authorizationStateReady'
-    CLOSING = 'authorizationStateClosing'
-    CLOSED = 'authorizationStateClosed'
+    WAIT_CODE = "authorizationStateWaitCode"
+    WAIT_PASSWORD = "authorizationStateWaitPassword"
+    WAIT_TDLIB_PARAMETERS = "authorizationStateWaitTdlibParameters"
+    WAIT_ENCRYPTION_KEY = "authorizationStateWaitEncryptionKey"
+    WAIT_PHONE_NUMBER = "authorizationStateWaitPhoneNumber"
+    WAIT_REGISTRATION = "authorizationStateWaitRegistration"
+    READY = "authorizationStateReady"
+    CLOSING = "authorizationStateClosing"
+    CLOSED = "authorizationStateClosed"
 
 
 class Telegram:
@@ -68,14 +64,14 @@ class Telegram:
         files_directory: Optional[Union[str, Path]] = None,
         use_test_dc: bool = False,
         use_message_database: bool = True,
-        device_model: str = 'python-telegram',
+        device_model: str = "python-telegram",
         application_version: str = VERSION,
-        system_version: str = 'unknown',
-        system_language_code: str = 'en',
+        system_version: str = "unknown",
+        system_language_code: str = "en",
         login: bool = False,
         default_workers_queue_size: int = 1000,
         tdlib_verbosity: int = 2,
-        proxy_server: str = '',
+        proxy_server: str = "",
         proxy_port: int = 0,
         proxy_type: Optional[Dict[str, str]] = None,
         use_secret_chats: bool = True,
@@ -115,7 +111,7 @@ class Telegram:
         self.authorization_state = AuthorizationState.NONE
 
         if not self.bot_token and not self.phone:
-            raise ValueError('You must provide bot_token or phone')
+            raise ValueError("You must provide bot_token or phone")
 
         self._database_encryption_key = database_encryption_key
         if isinstance(self._database_encryption_key, str):
@@ -126,7 +122,7 @@ class Telegram:
         if not files_directory:
             hasher = hashlib.md5()
             str_to_encode: str = self.phone or self.bot_token  # type: ignore
-            hasher.update(str_to_encode.encode('utf-8'))
+            hasher.update(str_to_encode.encode("utf-8"))
             directory_name = hasher.hexdigest()
             files_directory = Path(tempfile.gettempdir()) / ".tdlib_files" / directory_name
 
@@ -157,7 +153,7 @@ class Telegram:
         if self._stopped.is_set():
             return
 
-        logger.info('Stopping telegram client...')
+        logger.info("Stopping telegram client...")
 
         self._close()
         self.worker.stop()
@@ -166,7 +162,7 @@ class Telegram:
         # wait for the tdjson listener to stop
         self._td_listener.join()
 
-        if hasattr(self, '_tdjson'):
+        if hasattr(self, "_tdjson"):
             self._tdjson.stop()
 
     def _close(self) -> None:
@@ -174,15 +170,15 @@ class Telegram:
         Calls `close` tdlib method and waits until authorization_state becomes CLOSED.
         Blocking.
         """
-        self.call_method('close')
+        self.call_method("close")
 
         while self.authorization_state != AuthorizationState.CLOSED:
             result = self.get_authorization_state()
             self.authorization_state = self._wait_authorization_result(result)
-            logger.info('Authorization state: %s', self.authorization_state)
+            logger.info("Authorization state: %s", self.authorization_state)
             time.sleep(0.5)
 
-    def parse_text_entities(self, text: str, parse_mode: Literal['HTML', 'Markdown']) -> AsyncResult:
+    def parse_text_entities(self, text: str, parse_mode: Literal["HTML", "Markdown"]) -> AsyncResult:
         """
         Parses text from 'HTML' and 'Markdown' (not MarkdownV2) into plain
         text and internal telegram style description.
@@ -212,14 +208,14 @@ class Telegram:
         """
 
         parse_mode_types = {
-            'HTML': 'textParseModeHTML',
-            'Markdown': 'textParseModeMarkdown',
+            "HTML": "textParseModeHTML",
+            "Markdown": "textParseModeMarkdown",
         }
         data = {
-            '@type': 'parseTextEntities',
-            'text': text,
-            'parse_mode': {
-                '@type': parse_mode_types[parse_mode],
+            "@type": "parseTextEntities",
+            "text": text,
+            "parse_mode": {
+                "@type": parse_mode_types[parse_mode],
             },
         }
 
@@ -257,24 +253,24 @@ class Telegram:
 
         updated_text: str
         if isinstance(text, Element):
-            result = self.parse_text_entities(text.to_html(), parse_mode='HTML')
+            result = self.parse_text_entities(text.to_html(), parse_mode="HTML")
             result.wait()
             assert result.update is not None
             update: dict = result.update
-            entities = update['entities']
-            updated_text = update['text']
+            entities = update["entities"]
+            updated_text = update["text"]
         else:
             updated_text = text
 
         data = {
-            '@type': 'sendMessage',
-            'chat_id': chat_id,
-            'input_message_content': {
-                '@type': 'inputMessageText',
-                'text': {
-                    '@type': 'formattedText',
-                    'text': updated_text,
-                    'entities': entities,
+            "@type": "sendMessage",
+            "chat_id": chat_id,
+            "input_message_content": {
+                "@type": "inputMessageText",
+                "text": {
+                    "@type": "formattedText",
+                    "text": updated_text,
+                    "entities": entities,
                 },
             },
         }
@@ -320,8 +316,8 @@ class Telegram:
             contact["@type"] = "contact"
 
         data = {
-            '@type': 'importContacts',
-            'contacts': contacts,
+            "@type": "importContacts",
+            "contacts": contacts,
         }
 
         return self._send_data(data)
@@ -331,7 +327,7 @@ class Telegram:
         This is offline request, if there is no chat in your database it will not be found
         tdlib saves chat to the database when it receives a new message or when you call `get_chats` method.
         """
-        data = {'@type': 'getChat', 'chat_id': chat_id}
+        data = {"@type": "getChat", "chat_id": chat_id}
 
         return self._send_data(data)
 
@@ -342,7 +338,7 @@ class Telegram:
         https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1get_me.html
         """
 
-        return self.call_method('getMe')
+        return self.call_method("getMe")
 
     def get_user(self, user_id: int) -> AsyncResult:
         """
@@ -351,7 +347,7 @@ class Telegram:
         https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1get_user.html
         """
 
-        return self.call_method('getUser', params={'user_id': user_id})
+        return self.call_method("getUser", params={"user_id": user_id})
 
     def get_user_full_info(self, user_id: int) -> AsyncResult:
         """
@@ -360,7 +356,7 @@ class Telegram:
         https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1get_user_full_info.html
         """
 
-        return self.call_method('getUserFullInfo', params={'user_id': user_id})
+        return self.call_method("getUserFullInfo", params={"user_id": user_id})
 
     def get_chats(self, offset_order: int = 0, offset_chat_id: int = 0, limit: int = 100) -> AsyncResult:
         """
@@ -376,10 +372,10 @@ class Telegram:
             }
         """
         data = {
-            '@type': 'getChats',
-            'offset_order': offset_order,
-            'offset_chat_id': offset_chat_id,
-            'limit': limit,
+            "@type": "getChats",
+            "offset_order": offset_order,
+            "offset_chat_id": offset_chat_id,
+            "limit": limit,
         }
 
         return self._send_data(data)
@@ -403,12 +399,12 @@ class Telegram:
             only_local
         """
         data = {
-            '@type': 'getChatHistory',
-            'chat_id': chat_id,
-            'limit': limit,
-            'from_message_id': from_message_id,
-            'offset': offset,
-            'only_local': only_local,
+            "@type": "getChatHistory",
+            "chat_id": chat_id,
+            "limit": limit,
+            "from_message_id": from_message_id,
+            "offset": offset,
+            "only_local": only_local,
         }
 
         return self._send_data(data)
@@ -438,9 +434,9 @@ class Telegram:
                 }
         """
         data = {
-            '@type': 'getMessage',
-            'chat_id': chat_id,
-            'message_id': message_id,
+            "@type": "getMessage",
+            "chat_id": chat_id,
+            "message_id": message_id,
         }
 
         return self._send_data(data)
@@ -457,10 +453,10 @@ class Telegram:
 
         return self._send_data(
             {
-                '@type': 'deleteMessages',
-                'chat_id': chat_id,
-                'message_ids': message_ids,
-                'revoke': revoke,
+                "@type": "deleteMessages",
+                "chat_id": chat_id,
+                "message_ids": message_ids,
+                "revoke": revoke,
             }
         )
 
@@ -472,7 +468,7 @@ class Telegram:
             supergroup_id
         """
 
-        return self._send_data({'@type': 'getSupergroupFullInfo', 'supergroup_id': supergroup_id})
+        return self._send_data({"@type": "getSupergroupFullInfo", "supergroup_id": supergroup_id})
 
     def create_basic_group_chat(self, basic_group_id: int) -> AsyncResult:
         """
@@ -482,7 +478,7 @@ class Telegram:
             basic_group_id
         """
 
-        return self._send_data({'@type': 'createBasicGroupChat', 'basic_group_id': basic_group_id})
+        return self._send_data({"@type": "createBasicGroupChat", "basic_group_id": basic_group_id})
 
     def get_web_page_instant_view(self, url: str, force_full: bool = False) -> AsyncResult:
         """
@@ -493,7 +489,7 @@ class Telegram:
             url: URL of a webpage
             force_full: If true, the full instant view for the web page will be returned
         """
-        data = {'@type': 'getWebPageInstantView', 'url': url, 'force_full': force_full}
+        data = {"@type": "getWebPageInstantView", "url": url, "force_full": force_full}
 
         return self._send_data(data)
 
@@ -510,7 +506,7 @@ class Telegram:
             method_name: Name of the method
             params: parameters
         """
-        data = {'@type': method_name}
+        data = {"@type": method_name}
 
         if params:
             data.update(params)
@@ -525,7 +521,7 @@ class Telegram:
         self.worker.run()
 
     def _listen_to_td(self) -> None:
-        logger.info('[Telegram.td_listener] started')
+        logger.info("[Telegram.td_listener] started")
 
         while not self._stopped.is_set():
             update = self._tdjson.receive()
@@ -537,20 +533,20 @@ class Telegram:
     def _update_async_result(self, update: Dict[Any, Any]) -> typing.Optional[AsyncResult]:
         async_result = None
 
-        _special_types = ('updateAuthorizationState',)  # for authorizationProcess @extra.request_id doesn't work
+        _special_types = ("updateAuthorizationState",)  # for authorizationProcess @extra.request_id doesn't work
 
-        if update.get('@type') in _special_types:
-            request_id = update['@type']
+        if update.get("@type") in _special_types:
+            request_id = update["@type"]
         else:
-            request_id = update.get('@extra', {}).get('request_id')
+            request_id = update.get("@extra", {}).get("request_id")
 
         if not request_id:
-            logger.debug('request_id has not been found in the update')
+            logger.debug("request_id has not been found in the update")
         else:
             async_result = self._results.get(request_id)
 
         if not async_result:
-            logger.debug('async_result has not been found in by request_id=%s', request_id)
+            logger.debug("async_result has not been found in by request_id=%s", request_id)
         else:
             done = async_result.parse_update(update)
 
@@ -560,7 +556,7 @@ class Telegram:
         return async_result
 
     def _run_handlers(self, update: Dict[Any, Any]) -> None:
-        update_type: str = update.get('@type', 'unknown')
+        update_type: str = update.get("@type", "unknown")
 
         for handler in self._update_handlers[update_type]:
             self._workers_queue.put((handler, update), timeout=self._queue_put_timeout)
@@ -594,14 +590,14 @@ class Telegram:
         If `block`is True, waits for the result
         """
 
-        if '@extra' not in data:
-            data['@extra'] = {}
+        if "@extra" not in data:
+            data["@extra"] = {}
 
-        if not result_id and 'request_id' in data['@extra']:
-            result_id = data['@extra']['request_id']
+        if not result_id and "request_id" in data["@extra"]:
+            result_id = data["@extra"]["request_id"]
 
         async_result = AsyncResult(client=self, result_id=result_id)
-        data['@extra']['request_id'] = async_result.id
+        data["@extra"]["request_id"] = async_result.id
         self._results[async_result.id] = async_result
         self._tdjson.send(data)
         async_result.request = data
@@ -630,14 +626,14 @@ class Telegram:
         self._stopped.wait()
 
     def _stop_signal_handler(self, signum: int, frame: Optional[FrameType] = None) -> None:
-        logger.info('Signal %s received!', signum)
+        logger.info("Signal %s received!", signum)
         self.stop()
 
     def get_authorization_state(self) -> AsyncResult:
-        logger.debug('Getting authorization state')
-        data = {'@type': 'getAuthorizationState'}
+        logger.debug("Getting authorization state")
+        data = {"@type": "getAuthorizationState"}
 
-        return self._send_data(data, result_id='getAuthorizationState')
+        return self._send_data(data, result_id="getAuthorizationState")
 
     def _wait_authorization_result(self, result: AsyncResult) -> AuthorizationState:
         authorization_state = None
@@ -646,12 +642,12 @@ class Telegram:
             result.wait(raise_exc=True)
 
             if result.update is None:
-                raise RuntimeError('Something wrong, the result update is None')
+                raise RuntimeError("Something wrong, the result update is None")
 
-            if result.id == 'getAuthorizationState':
-                authorization_state = result.update['@type']
+            if result.id == "getAuthorizationState":
+                authorization_state = result.update["@type"]
             else:
-                authorization_state = result.update['authorization_state']['@type']
+                authorization_state = result.update["authorization_state"]["@type"]
 
         return AuthorizationState(authorization_state)
 
@@ -702,12 +698,12 @@ class Telegram:
         )
 
         if self.phone:
-            logger.info('[login] Login process has been started with phone')
+            logger.info("[login] Login process has been started with phone")
         else:
-            logger.info('[login] Login process has been started with bot token')
+            logger.info("[login] Login process has been started with bot token")
 
         while self.authorization_state != AuthorizationState.READY:
-            logger.info('[login] current authorization state: %s', self.authorization_state)
+            logger.info("[login] current authorization state: %s", self.authorization_state)
 
             if not blocking and self.authorization_state in blocking_actions:
                 return self.authorization_state
@@ -723,43 +719,43 @@ class Telegram:
 
     def _set_initial_params(self) -> AsyncResult:
         logger.info(
-            'Setting tdlib initial params: files_dir=%s, test_dc=%s',
+            "Setting tdlib initial params: files_dir=%s, test_dc=%s",
             self.files_directory,
             self.use_test_dc,
         )
 
         parameters = {
-            'use_test_dc': self.use_test_dc,
-            'api_id': self.api_id,
-            'api_hash': self.api_hash,
-            'device_model': self.device_model,
-            'system_version': self.system_version,
-            'application_version': self.application_version,
-            'system_language_code': self.system_language_code,
-            'database_directory': str(self.files_directory / "database"),
-            'use_message_database': self.use_message_database,
-            'files_directory': str(self.files_directory / "files"),
-            'use_secret_chats': self.use_secret_chats,
+            "use_test_dc": self.use_test_dc,
+            "api_id": self.api_id,
+            "api_hash": self.api_hash,
+            "device_model": self.device_model,
+            "system_version": self.system_version,
+            "application_version": self.application_version,
+            "system_language_code": self.system_language_code,
+            "database_directory": str(self.files_directory / "database"),
+            "use_message_database": self.use_message_database,
+            "files_directory": str(self.files_directory / "files"),
+            "use_secret_chats": self.use_secret_chats,
         }
         data: Dict[str, typing.Any] = {
-            '@type': 'setTdlibParameters',
-            'parameters': parameters,
+            "@type": "setTdlibParameters",
+            "parameters": parameters,
             # since tdlib 1.8.6
-            'database_encryption_key': self._database_encryption_key,
+            "database_encryption_key": self._database_encryption_key,
             **parameters,
         }
 
-        return self._send_data(data, result_id='updateAuthorizationState')
+        return self._send_data(data, result_id="updateAuthorizationState")
 
     def _send_encryption_key(self) -> AsyncResult:
-        logger.info('Sending encryption key')
+        logger.info("Sending encryption key")
 
         data = {
-            '@type': 'checkDatabaseEncryptionKey',
-            'encryption_key': self._database_encryption_key,
+            "@type": "checkDatabaseEncryptionKey",
+            "encryption_key": self._database_encryption_key,
         }
 
-        return self._send_data(data, result_id='updateAuthorizationState')
+        return self._send_data(data, result_id="updateAuthorizationState")
 
     def _send_phone_number_or_bot_token(self) -> AsyncResult:
         """Sends phone number or a bot_token"""
@@ -769,45 +765,45 @@ class Telegram:
         elif self.bot_token:
             return self._send_bot_token()
         else:
-            raise RuntimeError('Unknown mode: both bot_token and phone are None')
+            raise RuntimeError("Unknown mode: both bot_token and phone are None")
 
     def _send_phone_number(self) -> AsyncResult:
-        logger.info('Sending phone number')
+        logger.info("Sending phone number")
         data = {
-            '@type': 'setAuthenticationPhoneNumber',
-            'phone_number': self.phone,
-            'allow_flash_call': False,
-            'is_current_phone_number': True,
+            "@type": "setAuthenticationPhoneNumber",
+            "phone_number": self.phone,
+            "allow_flash_call": False,
+            "is_current_phone_number": True,
         }
 
-        return self._send_data(data, result_id='updateAuthorizationState')
+        return self._send_data(data, result_id="updateAuthorizationState")
 
     def _send_add_proxy(self) -> AsyncResult:
-        logger.info('Sending addProxy')
+        logger.info("Sending addProxy")
         data = {
-            '@type': 'addProxy',
-            'server': self.proxy_server,
-            'port': self.proxy_port,
-            'enable': True,
-            'type': self.proxy_type,
+            "@type": "addProxy",
+            "server": self.proxy_server,
+            "port": self.proxy_port,
+            "enable": True,
+            "type": self.proxy_type,
         }
 
-        return self._send_data(data, result_id='setProxy')
+        return self._send_data(data, result_id="setProxy")
 
     def _send_bot_token(self) -> AsyncResult:
-        logger.info('Sending bot token')
-        data = {'@type': 'checkAuthenticationBotToken', 'token': self.bot_token}
+        logger.info("Sending bot token")
+        data = {"@type": "checkAuthenticationBotToken", "token": self.bot_token}
 
-        return self._send_data(data, result_id='updateAuthorizationState')
+        return self._send_data(data, result_id="updateAuthorizationState")
 
     def _send_telegram_code(self, code: Optional[str] = None) -> AsyncResult:
-        logger.info('Sending code')
+        logger.info("Sending code")
 
         if code is None:
-            code = input('Enter code:')
-        data = {'@type': 'checkAuthenticationCode', 'code': str(code)}
+            code = input("Enter code:")
+        data = {"@type": "checkAuthenticationCode", "code": str(code)}
 
-        return self._send_data(data, result_id='updateAuthorizationState')
+        return self._send_data(data, result_id="updateAuthorizationState")
 
     def send_code(self, code: str) -> AuthorizationState:
         """
@@ -828,13 +824,13 @@ class Telegram:
         return self.authorization_state
 
     def _send_password(self, password: Optional[str] = None) -> AsyncResult:
-        logger.info('Sending password')
+        logger.info("Sending password")
 
         if password is None:
-            password = getpass.getpass('Password:')
-        data = {'@type': 'checkAuthenticationPassword', 'password': password}
+            password = getpass.getpass("Password:")
+        data = {"@type": "checkAuthenticationPassword", "password": password}
 
-        return self._send_data(data, result_id='updateAuthorizationState')
+        return self._send_data(data, result_id="updateAuthorizationState")
 
     def send_password(self, password: str) -> AuthorizationState:
         """
@@ -857,21 +853,21 @@ class Telegram:
         return self.authorization_state
 
     def _register_user(self, first: Optional[str] = None, last: Optional[str] = None) -> AsyncResult:
-        logger.info('Registering user')
+        logger.info("Registering user")
 
         if first is None:
-            first = input('Enter first name: ')
+            first = input("Enter first name: ")
 
         if last is None:
-            last = input('Enter last name: ')
+            last = input("Enter last name: ")
 
         data = {
-            '@type': 'registerUser',
-            'first_name': first,
-            'last_name': last,
+            "@type": "registerUser",
+            "first_name": first,
+            "last_name": last,
         }
 
-        return self._send_data(data, result_id='updateAuthorizationState')
+        return self._send_data(data, result_id="updateAuthorizationState")
 
     def register_user(self, first: str, last: str) -> AuthorizationState:
         """

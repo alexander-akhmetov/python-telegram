@@ -1,4 +1,4 @@
-FROM python:3.10.0-bullseye
+FROM python:3.12.4-slim-bullseye
 
 RUN python3 -m pip install python-telegram
 

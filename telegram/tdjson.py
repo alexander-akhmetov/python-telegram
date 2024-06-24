@@ -4,8 +4,7 @@ import platform
 import ctypes.util
 from ctypes import CDLL, CFUNCTYPE, c_int, c_char_p, c_double, c_void_p, c_longlong
 from typing import Any, Dict, Optional, Union
-
-import pkg_resources
+import importlib.resources
 
 logger = logging.getLogger(__name__)
 
@@ -16,13 +15,13 @@ def _get_tdjson_lib_path() -> str:
     if system_library is not None:
         return system_library
 
-    if platform.system().lower() == 'darwin':
+    if platform.system().lower() == "darwin":
         platform_architecture = platform.machine()
-        lib_name = f'darwin/{platform_architecture}/libtdjson.dylib'
+        lib_name = f"darwin/{platform_architecture}/libtdjson.dylib"
     else:
-        lib_name = 'linux/libtdjson.so'
+        lib_name = "linux/libtdjson.so"
 
-    return pkg_resources.resource_filename('telegram', f'lib/{lib_name}')
+    return str(importlib.resources.files("telegram").joinpath(f"lib/{lib_name}"))
 
 
 class TDJson:
@@ -34,7 +33,9 @@ class TDJson:
         self._build_client(library_path, verbosity)
 
     def __del__(self) -> None:
-        if hasattr(self, '_tdjson') and hasattr(self._tdjson, '_td_json_client_destroy'):
+        if hasattr(self, "_tdjson") and hasattr(
+            self._tdjson, "_td_json_client_destroy"
+        ):
             self.stop()
 
     def _build_client(self, library_path: str, verbosity: int) -> None:
@@ -79,39 +80,41 @@ class TDJson:
 
         fatal_error_callback_type = CFUNCTYPE(None, c_char_p)
 
-        self._td_set_log_fatal_error_callback = self._tdjson.td_set_log_fatal_error_callback
+        self._td_set_log_fatal_error_callback = (
+            self._tdjson.td_set_log_fatal_error_callback
+        )
         self._td_set_log_fatal_error_callback.restype = None
         self._td_set_log_fatal_error_callback.argtypes = [fatal_error_callback_type]
 
         # initialize TDLib log with desired parameters
         def on_fatal_error_callback(error_message: str) -> None:
-            logger.error('TDLib fatal error: %s', error_message)
+            logger.error("TDLib fatal error: %s", error_message)
 
         c_on_fatal_error_callback = fatal_error_callback_type(on_fatal_error_callback)
         self._td_set_log_fatal_error_callback(c_on_fatal_error_callback)
 
     def send(self, query: Dict[Any, Any]) -> None:
-        dumped_query = json.dumps(query).encode('utf-8')
+        dumped_query = json.dumps(query).encode("utf-8")
         self._td_json_client_send(self.td_json_client, dumped_query)
-        logger.debug('[me ==>] Sent %s', dumped_query)
+        logger.debug("[me ==>] Sent %s", dumped_query)
 
     def receive(self) -> Union[None, Dict[Any, Any]]:
         result_str = self._td_json_client_receive(self.td_json_client, 1.0)
 
         if result_str:
-            result: Dict[Any, Any] = json.loads(result_str.decode('utf-8'))
-            logger.debug('[me <==] Received %s', result)
+            result: Dict[Any, Any] = json.loads(result_str.decode("utf-8"))
+            logger.debug("[me <==] Received %s", result)
 
             return result
 
         return None
 
     def td_execute(self, query: Dict[Any, Any]) -> Union[Dict[Any, Any], Any]:
-        dumped_query = json.dumps(query).encode('utf-8')
+        dumped_query = json.dumps(query).encode("utf-8")
         result_str = self._td_json_client_execute(self.td_json_client, dumped_query)
 
         if result_str:
-            result: Dict[Any, Any] = json.loads(result_str.decode('utf-8'))
+            result: Dict[Any, Any] = json.loads(result_str.decode("utf-8"))
 
             return result
 

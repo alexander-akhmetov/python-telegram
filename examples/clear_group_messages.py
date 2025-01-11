@@ -48,7 +48,7 @@ def delete_messages(chat_id, message_ids):
     BATCH = 20
     num = len(message_ids)
     for i in range(0, num, BATCH):
-        print(f".. Deleting {i}-{i+BATCH-1} / {num}...")
+        print(f".. Deleting {i}-{i + BATCH - 1} / {num}...")
         r = tg.delete_messages(chat_id, message_ids[i : i + BATCH], revoke=True)
         r.wait(raise_exc=True)
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     selected = int(input("Select a group to clear: ").strip())
     chat_info = chat_map[selected]
     print(f"You selected: {selected} {json.dumps(chat_info, indent=2)}")
-    print(f'Chat: {chat_info["title"]}')
+    print(f"Chat: {chat_info['title']}")
 
     confirm("Are you sure?")
 

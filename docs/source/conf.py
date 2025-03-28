@@ -16,6 +16,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.abspath("../.."))
+import telegram  # Import the package to access __version__
 
 
 # -- Project information -----------------------------------------------------
@@ -27,9 +28,9 @@ author = "Alexander Akhmetov"
 html_show_sourcelink = False
 
 # The short X.Y version
-version = ""
+version = telegram.__version__
 # The full version, including alpha/beta/rc tags
-release = ""
+release = telegram.__version__
 
 
 # -- General configuration ---------------------------------------------------

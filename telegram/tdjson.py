@@ -16,7 +16,8 @@ def _get_tdjson_lib_path() -> str:
         return system_library
 
     if platform.system().lower() == "darwin":
-        lib_name = "darwin/libtdjson.dylib"
+        platform_architecture = platform.machine()
+        lib_name = f"darwin/{platform_architecture}/libtdjson.dylib"
     else:
         lib_name = "linux/libtdjson.so"
 
@@ -32,7 +33,9 @@ class TDJson:
         self._build_client(library_path, verbosity)
 
     def __del__(self) -> None:
-        if hasattr(self, "_tdjson") and hasattr(self._tdjson, "_td_json_client_destroy"):
+        if hasattr(self, "_tdjson") and hasattr(
+            self._tdjson, "_td_json_client_destroy"
+        ):
             self.stop()
 
     def _build_client(self, library_path: str, verbosity: int) -> None:
@@ -77,7 +80,9 @@ class TDJson:
 
         fatal_error_callback_type = CFUNCTYPE(None, c_char_p)
 
-        self._td_set_log_fatal_error_callback = self._tdjson.td_set_log_fatal_error_callback
+        self._td_set_log_fatal_error_callback = (
+            self._tdjson.td_set_log_fatal_error_callback
+        )
         self._td_set_log_fatal_error_callback.restype = None
         self._td_set_log_fatal_error_callback.argtypes = [fatal_error_callback_type]
 

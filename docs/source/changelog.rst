@@ -11,6 +11,8 @@ Changelog
 - Added email authorization support: ``send_email_address`` and ``send_email_code``.
 - ``stop`` no longer blocks forever when tdlib does not answer, and no longer leaves the client running when tdlib answers with an error. It now waits up to 5 seconds for the session to close, which can be changed with ``stop(close_timeout=...)``.
 - Calling a method after ``stop`` raises ``ClientDestroyedError`` instead of crashing the process. The destroyed tdlib handle was passed to the C library as a ``NULL`` pointer.
+- An exception raised by an update handler no longer stops the worker thread. The error is logged and the worker keeps processing the queue.
+- When the handler queue is full, the update is dropped and an error is logged instead of raising ``queue.Full``.
 
 [0.19.0] - 2024-06-23
 ---------------------

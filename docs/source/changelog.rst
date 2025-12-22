@@ -8,6 +8,8 @@ Changelog
 
 - Python versions 3.7 and 3.8 are no longer supported.
 - tdlib 1.8.31.
+- Fix: Handle errors during updates processing
+- Fix: Handle queue full errors
 
 [0.18.0] - 2023-03-13
 

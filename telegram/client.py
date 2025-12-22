@@ -559,7 +559,14 @@ class Telegram:
         update_type: str = update.get("@type", "unknown")
 
         for handler in self._update_handlers[update_type]:
-            self._workers_queue.put((handler, update), timeout=self._queue_put_timeout)
+            try:
+                self._workers_queue.put((handler, update), timeout=self._queue_put_timeout)
+            except queue.Full:
+                logger.error(
+                    "Queue is full, update %s dropped for handler %s",
+                    update_type,
+                    handler.__name__ if hasattr(handler, "__name__") else handler,
+                )
 
     def remove_update_handler(self, handler_type: str, func: Callable) -> None:
         """

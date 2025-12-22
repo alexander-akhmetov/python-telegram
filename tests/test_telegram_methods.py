@@ -1,4 +1,6 @@
 import pytest
+import queue
+import time
 
 from unittest.mock import patch
 
@@ -6,6 +8,7 @@ from telegram import VERSION
 from telegram.utils import AsyncResult
 from telegram.client import Telegram, MESSAGE_HANDLER_TYPE, AuthorizationState
 from telegram.text import Spoiler
+from telegram.worker import SimpleWorker
 
 API_ID = 1
 API_HASH = "hash"
@@ -90,7 +93,10 @@ class TestTelegram:
 
     def test_send_phone_number_or_bot_token(self, telegram):
         # check that the dunction calls _send_phone_number or _send_bot_token
-        with patch.object(telegram, "_send_phone_number"), patch.object(telegram, "_send_bot_token"):
+        with (
+            patch.object(telegram, "_send_phone_number"),
+            patch.object(telegram, "_send_bot_token"),
+        ):
             telegram.phone = "123"
             telegram.bot_token = None
 
@@ -112,7 +118,9 @@ class TestTelegram:
             telegram._send_bot_token()
 
             exp_data = {"@type": "checkAuthenticationBotToken", "token": "some-token"}
-            telegram._send_data.assert_called_once_with(exp_data, result_id="updateAuthorizationState")
+            telegram._send_data.assert_called_once_with(
+                exp_data, result_id="updateAuthorizationState"
+            )
 
     def test_add_message_handler(self, telegram):
         # check that add_message_handler
@@ -201,7 +209,9 @@ class TestTelegram:
         url = "https://yandex.ru/"
         force_full = False
 
-        async_result = telegram.get_web_page_instant_view(url=url, force_full=force_full)
+        async_result = telegram.get_web_page_instant_view(
+            url=url, force_full=force_full
+        )
 
         exp_data = {
             "@type": "getWebPageInstantView",
@@ -263,7 +273,9 @@ class TestTelegram:
         offset_chat_id = 1
         limit = 100
 
-        async_result = telegram.get_chats(offset_order=offset_order, offset_chat_id=offset_chat_id, limit=limit)
+        async_result = telegram.get_chats(
+            offset_order=offset_order, offset_chat_id=offset_chat_id, limit=limit
+        )
 
         exp_data = {
             "@type": "getChats",
@@ -366,7 +378,9 @@ class TestTelegram__update_async_result:
         assert async_result == new_async_result
 
     def test_result_id_should_be_replaced_if_it_is_auth_process(self, telegram):
-        async_result = AsyncResult(client=telegram, result_id="updateAuthorizationState")
+        async_result = AsyncResult(
+            client=telegram, result_id="updateAuthorizationState"
+        )
         telegram._results["updateAuthorizationState"] = async_result
 
         update = {
@@ -404,7 +418,9 @@ class TestTelegram__login:
         )
 
         telegram._set_initial_params = lambda: _get_async_result(
-            data={"authorization_state": {"@type": "authorizationStateWaitEncryptionKey"}}
+            data={
+                "authorization_state": {"@type": "authorizationStateWaitEncryptionKey"}
+            }
         )
         telegram._send_encryption_key = lambda: _get_async_result(
             data={"authorization_state": {"@type": "authorizationStateWaitPhoneNumber"}}
@@ -444,7 +460,9 @@ class TestTelegram__login_non_blocking:
         )
 
         telegram._set_initial_params = lambda: _get_async_result(
-            data={"authorization_state": {"@type": "authorizationStateWaitEncryptionKey"}}
+            data={
+                "authorization_state": {"@type": "authorizationStateWaitEncryptionKey"}
+            }
         )
         telegram._send_encryption_key = lambda: _get_async_result(
             data={"authorization_state": {"@type": "authorizationStateWaitPhoneNumber"}}
@@ -453,7 +471,9 @@ class TestTelegram__login_non_blocking:
             data={"authorization_state": {"@type": "authorizationStateWaitCode"}}
         )
         telegram._send_telegram_code = lambda _: _get_async_result(
-            data={"authorization_state": {"@type": "authorizationStateWaitRegistration"}}
+            data={
+                "authorization_state": {"@type": "authorizationStateWaitRegistration"}
+            }
         )
         telegram._register_user = lambda _, __: _get_async_result(
             data={"authorization_state": {"@type": "authorizationStateWaitPassword"}}
@@ -478,3 +498,44 @@ class TestTelegram__login_non_blocking:
         assert state == telegram.authorization_state == AuthorizationState.READY
 
         assert telegram._tdjson.send.call_count == 0
+
+
+class TestWorker:
+    def test_worker_continues_after_handler_exception(self):
+        """Handler exceptions should not kill the worker thread and task_done must be called"""
+        q = queue.Queue()
+        worker = SimpleWorker(q)
+        worker.run()
+
+        results = []
+
+        def failing_handler(update):
+            raise ValueError("Handler failed")
+
+        def working_handler(update):
+            results.append(update)
+
+        # Put two items: one with a failing handler, one with a working handler
+        q.put((failing_handler, {"id": 1}))
+        q.put((working_handler, {"id": 2}))
+
+        # Give the worker time to process both items.
+        # Can't use join when the test fails.
+        time.sleep(1)
+
+        worker.stop()
+
+        assert results == [{"id": 2}]
+
+    def test_run_handlers_continues_on_queue_full(self, telegram):
+        """queue.Full should not crash the listener"""
+
+        def my_handler():
+            pass
+
+        telegram.add_message_handler(my_handler)
+
+        # Mock the queue to always raise queue.Full
+        with patch.object(telegram._workers_queue, "put", side_effect=queue.Full):
+            # This should not raise an exception
+            telegram._run_handlers({"@type": MESSAGE_HANDLER_TYPE})

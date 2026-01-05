@@ -1,5 +1,5 @@
 ruff==0.14.10
-pytest==8.4.2
+pytest==9.0.2
 ipdb==0.13.13
 mypy==1.19.1
 types-pkg-resources==0.1.3

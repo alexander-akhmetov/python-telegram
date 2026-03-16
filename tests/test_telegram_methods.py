@@ -1,4 +1,6 @@
 import pytest
+import queue
+import time
 
 from unittest.mock import patch
 
@@ -6,6 +8,7 @@ from telegram import VERSION
 from telegram.utils import AsyncResult
 from telegram.client import Telegram, MESSAGE_HANDLER_TYPE, AuthorizationState
 from telegram.text import Spoiler
+from telegram.worker import SimpleWorker
 
 API_ID = 1
 API_HASH = "hash"
@@ -89,8 +92,11 @@ class TestTelegram:
         telegram._tdjson.send.assert_called_once_with(exp_data)
 
     def test_send_phone_number_or_bot_token(self, telegram):
-        # check that the dunction calls _send_phone_number or _send_bot_token
-        with patch.object(telegram, "_send_phone_number"), patch.object(telegram, "_send_bot_token"):
+        # check that the function calls _send_phone_number or _send_bot_token
+        with (
+            patch.object(telegram, "_send_phone_number"),
+            patch.object(telegram, "_send_bot_token"),
+        ):
             telegram.phone = "123"
             telegram.bot_token = None
 
@@ -478,3 +484,44 @@ class TestTelegram__login_non_blocking:
         assert state == telegram.authorization_state == AuthorizationState.READY
 
         assert telegram._tdjson.send.call_count == 0
+
+
+class TestWorker:
+    def test_worker_continues_after_handler_exception(self):
+        """Handler exceptions should not kill the worker thread and task_done must be called"""
+        q = queue.Queue()
+        worker = SimpleWorker(q)
+        worker.run()
+
+        results = []
+
+        def failing_handler(update):
+            raise ValueError("Handler failed")
+
+        def working_handler(update):
+            results.append(update)
+
+        # Put two items: one with a failing handler, one with a working handler
+        q.put((failing_handler, {"id": 1}))
+        q.put((working_handler, {"id": 2}))
+
+        # Give the worker time to process both items.
+        # Can't use join when the test fails.
+        time.sleep(1)
+
+        worker.stop()
+
+        assert results == [{"id": 2}]
+
+    def test_run_handlers_continues_on_queue_full(self, telegram):
+        """queue.Full should not crash the listener"""
+
+        def my_handler():
+            pass
+
+        telegram.add_message_handler(my_handler)
+
+        # Mock the queue to always raise queue.Full
+        with patch.object(telegram._workers_queue, "put", side_effect=queue.Full):
+            # This should not raise an exception
+            telegram._run_handlers({"@type": MESSAGE_HANDLER_TYPE})

@@ -32,7 +32,7 @@ class TDJson:
         self._build_client(library_path, verbosity)
 
     def __del__(self) -> None:
-        if hasattr(self, "_tdjson") and hasattr(self._tdjson, "_td_json_client_destroy"):
+        if hasattr(self, "_td_json_client_destroy"):
             self.stop()
 
     def _build_client(self, library_path: str, verbosity: int) -> None:
@@ -85,8 +85,8 @@ class TDJson:
         def on_fatal_error_callback(error_message: str) -> None:
             logger.error("TDLib fatal error: %s", error_message)
 
-        c_on_fatal_error_callback = fatal_error_callback_type(on_fatal_error_callback)
-        self._td_set_log_fatal_error_callback(c_on_fatal_error_callback)
+        self._c_on_fatal_error_callback = fatal_error_callback_type(on_fatal_error_callback)
+        self._td_set_log_fatal_error_callback(self._c_on_fatal_error_callback)
 
     def send(self, query: Dict[Any, Any]) -> None:
         dumped_query = json.dumps(query).encode("utf-8")
@@ -116,4 +116,7 @@ class TDJson:
         return None
 
     def stop(self) -> None:
+        if self.td_json_client is None:
+            return
         self._td_json_client_destroy(self.td_json_client)
+        self.td_json_client = None

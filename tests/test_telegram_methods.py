@@ -1,3 +1,5 @@
+import queue
+
 import pytest
 
 from unittest.mock import patch
@@ -478,3 +480,97 @@ class TestTelegram__login_non_blocking:
         assert state == telegram.authorization_state == AuthorizationState.READY
 
         assert telegram._tdjson.send.call_count == 0
+
+
+class TestWorkerExceptionHandling:
+    def test_worker_thread_survives_handler_exception(self):
+        import time
+        from queue import Queue
+        from telegram.worker import SimpleWorker
+
+        q = Queue()
+        worker = SimpleWorker(queue=q)
+        worker.run()
+
+        results = []
+
+        def bad_handler(update):
+            raise RuntimeError("boom")
+
+        def good_handler(update):
+            results.append(update)
+
+        q.put((bad_handler, {"@type": "test"}))
+        q.put((good_handler, {"@type": "test"}))
+
+        time.sleep(0.5)
+        worker.stop()
+
+        assert results == [{"@type": "test"}]
+
+
+class TestListenerExceptionHandling:
+    def test_listener_survives_receive_exception(self, telegram):
+        import threading
+
+        telegram._stopped = threading.Event()
+        call_count = 0
+
+        def exploding_receive():
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise RuntimeError("receive failed")
+            if call_count == 2:
+                return {"@type": "ok", "@extra": {"request_id": "test123"}}
+            telegram._stopped.set()
+            return None
+
+        telegram._tdjson.receive = exploding_receive
+        telegram._listen_to_td()
+
+        assert call_count == 3
+
+    def test_listener_exits_on_exception_when_stopped(self, telegram):
+        import threading
+
+        telegram._stopped = threading.Event()
+
+        def exploding_receive():
+            telegram._stopped.set()
+            raise RuntimeError("error during shutdown")
+
+        telegram._tdjson.receive = exploding_receive
+        telegram._listen_to_td()
+
+
+class TestRunHandlersQueueFull:
+    def test_queue_full_does_not_propagate(self, telegram):
+        def my_handler(update):
+            pass
+
+        telegram.add_update_handler("testUpdate", my_handler)
+
+        with patch.object(telegram._workers_queue, "put", side_effect=queue.Full):
+            telegram._run_handlers({"@type": "testUpdate"})
+
+
+class TestSendMessageElementError:
+    def test_raises_on_parse_error(self, telegram):
+        error_result = AsyncResult(client=telegram)
+        error_result.error = True
+        error_result.error_info = {"@type": "error", "message": "Bad HTML"}
+        error_result._ready.set()
+
+        with patch.object(telegram, "parse_text_entities", return_value=error_result):
+            with pytest.raises(RuntimeError):
+                telegram.send_message(chat_id=1, text=Spoiler("test"))
+
+    def test_raises_on_none_update(self, telegram):
+        result = AsyncResult(client=telegram)
+        result.update = None
+        result._ready.set()
+
+        with patch.object(telegram, "parse_text_entities", return_value=result):
+            with pytest.raises(RuntimeError, match="Failed to parse text entities"):
+                telegram.send_message(chat_id=1, text=Spoiler("test"))

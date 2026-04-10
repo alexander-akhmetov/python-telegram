@@ -254,8 +254,9 @@ class Telegram:
         updated_text: str
         if isinstance(text, Element):
             result = self.parse_text_entities(text.to_html(), parse_mode="HTML")
-            result.wait()
-            assert result.update is not None
+            result.wait(raise_exc=True)
+            if result.update is None:
+                raise RuntimeError(f"Failed to parse text entities: {result.error_info}")
             update: dict = result.update
             entities = update["entities"]
             updated_text = update["text"]
@@ -524,11 +525,16 @@ class Telegram:
         logger.info("[Telegram.td_listener] started")
 
         while not self._stopped.is_set():
-            update = self._tdjson.receive()
+            try:
+                update = self._tdjson.receive()
 
-            if update:
-                self._update_async_result(update)
-                self._run_handlers(update)
+                if update:
+                    self._update_async_result(update)
+                    self._run_handlers(update)
+            except Exception:
+                if self._stopped.is_set():
+                    break
+                logger.exception("[Telegram.td_listener] error processing update")
 
     def _update_async_result(self, update: Dict[Any, Any]) -> typing.Optional[AsyncResult]:
         async_result = None
@@ -559,7 +565,10 @@ class Telegram:
         update_type: str = update.get("@type", "unknown")
 
         for handler in self._update_handlers[update_type]:
-            self._workers_queue.put((handler, update), timeout=self._queue_put_timeout)
+            try:
+                self._workers_queue.put((handler, update), timeout=self._queue_put_timeout)
+            except queue.Full:
+                logger.error("Handler queue full, dropping update %s for handler %s", update_type, handler)
 
     def remove_update_handler(self, handler_type: str, func: Callable) -> None:
         """

@@ -7,6 +7,8 @@ Changelog
 
 - Python 3.9 is no longer supported.
 - Added support for Python 3.13 and 3.14.
+- Login no longer fails with a ``ValueError`` when tdlib reports an authorization state that ``AuthorizationState`` did not know about: ``authorizationStateWaitEmailAddress``, ``authorizationStateWaitEmailCode``, ``authorizationStateWaitOtherDeviceConfirmation`` and ``authorizationStateLoggingOut``.
+- Added email authorization support: ``send_email_address`` and ``send_email_code``.
 
 [0.19.0] - 2024-06-23
 ---------------------

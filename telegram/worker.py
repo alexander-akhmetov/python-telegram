@@ -1,7 +1,6 @@
 import logging
 import threading
-from queue import Queue, Empty
-
+from queue import Empty, Queue
 
 logger = logging.getLogger(__name__)
 

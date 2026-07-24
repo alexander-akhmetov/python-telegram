@@ -1,13 +1,12 @@
 import queue
+from unittest.mock import patch
 
 import pytest
 
-from unittest.mock import patch
-
 from telegram import VERSION
-from telegram.utils import AsyncResult
-from telegram.client import Telegram, MESSAGE_HANDLER_TYPE, AuthorizationState
+from telegram.client import MESSAGE_HANDLER_TYPE, AuthorizationState, Telegram
 from telegram.text import Spoiler
+from telegram.utils import AsyncResult
 
 API_ID = 1
 API_HASH = "hash"
@@ -18,9 +17,8 @@ DATABASE_ENCRYPTION_KEY = "changeme1234"
 
 @pytest.fixture
 def telegram():
-    with patch("telegram.client.TDJson"):
-        with patch("telegram.client.threading"):
-            return _get_telegram_instance()
+    with patch("telegram.client.TDJson"), patch("telegram.client.threading"):
+        return _get_telegram_instance()
 
 
 def _get_telegram_instance(**kwargs):
@@ -30,9 +28,8 @@ def _get_telegram_instance(**kwargs):
     kwargs.setdefault("library_path", LIBRARY_PATH)
     kwargs.setdefault("database_encryption_key", DATABASE_ENCRYPTION_KEY)
 
-    with patch("telegram.client.TDJson"):
-        with patch("telegram.client.threading"):
-            tg = Telegram(**kwargs)
+    with patch("telegram.client.TDJson"), patch("telegram.client.threading"):
+        tg = Telegram(**kwargs)
 
     return tg
 
@@ -486,6 +483,7 @@ class TestWorkerExceptionHandling:
     def test_worker_thread_survives_handler_exception(self):
         import time
         from queue import Queue
+
         from telegram.worker import SimpleWorker
 
         q = Queue()
@@ -562,15 +560,14 @@ class TestSendMessageElementError:
         error_result.error_info = {"@type": "error", "message": "Bad HTML"}
         error_result._ready.set()
 
-        with patch.object(telegram, "parse_text_entities", return_value=error_result):
-            with pytest.raises(RuntimeError):
-                telegram.send_message(chat_id=1, text=Spoiler("test"))
+        with patch.object(telegram, "parse_text_entities", return_value=error_result), pytest.raises(RuntimeError):
+            telegram.send_message(chat_id=1, text=Spoiler("test"))
 
     def test_raises_on_none_update(self, telegram):
         result = AsyncResult(client=telegram)
         result.update = None
         result._ready.set()
 
-        with patch.object(telegram, "parse_text_entities", return_value=result):
-            with pytest.raises(RuntimeError, match="Failed to parse text entities"):
-                telegram.send_message(chat_id=1, text=Spoiler("test"))
+        patched_parse = patch.object(telegram, "parse_text_entities", return_value=result)
+        with patched_parse, pytest.raises(RuntimeError, match="Failed to parse text entities"):
+            telegram.send_message(chat_id=1, text=Spoiler("test"))

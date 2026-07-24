@@ -1,9 +1,9 @@
 import argparse
 from pprint import pprint
 
-from telegram.client import Telegram
-
 import utils
+
+from telegram.client import Telegram
 
 
 def main():

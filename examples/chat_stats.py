@@ -1,11 +1,11 @@
-import string
-import logging
 import argparse
+import logging
+import string
 from collections import Counter
 
 from utils import setup_logging
-from telegram.client import Telegram
 
+from telegram.client import Telegram
 
 """
 Prints most popular words in the chat.
@@ -45,7 +45,7 @@ def retreive_messages(telegram, chat_id, receive_limit):
 def print_stats(stats_data, most_common_count):
     words = Counter()
     translator = str.maketrans("", "", string.punctuation)
-    for _, message in stats_data.items():
+    for message in stats_data.values():
         for word in message.split(" "):
             word = word.translate(translator).lower()
             if len(word) > 3:

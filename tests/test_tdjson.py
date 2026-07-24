@@ -9,10 +9,9 @@ class TestGetTdjsonTdlibPath:
         mocked_files = Mock()
         mocked_joinpath = Mock()
 
-        with patch("telegram.tdjson.platform.system", mocked_system):
-            with patch("importlib.resources.files", mocked_files):
-                mocked_files.return_value.joinpath = mocked_joinpath
-                _get_tdjson_lib_path()
+        with patch("telegram.tdjson.platform.system", mocked_system), patch("importlib.resources.files", mocked_files):
+            mocked_files.return_value.joinpath = mocked_joinpath
+            _get_tdjson_lib_path()
 
         mocked_files.assert_called_once_with("telegram")
         mocked_joinpath.assert_called_once_with("lib/darwin/libtdjson.dylib")
@@ -22,10 +21,9 @@ class TestGetTdjsonTdlibPath:
         mocked_files = Mock()
         mocked_joinpath = Mock()
 
-        with patch("telegram.tdjson.platform.system", mocked_system):
-            with patch("importlib.resources.files", mocked_files):
-                mocked_files.return_value.joinpath = mocked_joinpath
-                _get_tdjson_lib_path()
+        with patch("telegram.tdjson.platform.system", mocked_system), patch("importlib.resources.files", mocked_files):
+            mocked_files.return_value.joinpath = mocked_joinpath
+            _get_tdjson_lib_path()
 
         mocked_files.assert_called_once_with("telegram")
         mocked_joinpath.assert_called_once_with("lib/linux/libtdjson.so")
@@ -35,10 +33,9 @@ class TestGetTdjsonTdlibPath:
         mocked_files = Mock()
         mocked_joinpath = Mock()
 
-        with patch("telegram.tdjson.platform.system", mocked_system):
-            with patch("importlib.resources.files", mocked_files):
-                mocked_files.return_value.joinpath = mocked_joinpath
-                _get_tdjson_lib_path()
+        with patch("telegram.tdjson.platform.system", mocked_system), patch("importlib.resources.files", mocked_files):
+            mocked_files.return_value.joinpath = mocked_joinpath
+            _get_tdjson_lib_path()
 
         mocked_files.assert_called_once_with("telegram")
         mocked_joinpath.assert_called_once_with("lib/linux/libtdjson.so")

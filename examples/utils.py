@@ -1,6 +1,6 @@
-import sys
-import logging
 import argparse
+import logging
+import sys
 
 
 def setup_logging(level=logging.INFO):

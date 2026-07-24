@@ -2,11 +2,9 @@ import argparse
 import getpass
 from pprint import pprint
 
-from telegram.client import Telegram
-from telegram.client import AuthorizationState
-
 import utils
 
+from telegram.client import AuthorizationState, Telegram
 
 if __name__ == "__main__":
     utils.setup_logging()
@@ -40,7 +38,7 @@ if __name__ == "__main__":
         tg.send_password(pwd)
         state = tg.login(blocking=False)
 
-    print("Authorization state: %s" % tg.authorization_state)
+    print(f"Authorization state: {tg.authorization_state}")
 
     result = tg.get_me()
     result.wait()

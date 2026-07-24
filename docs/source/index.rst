@@ -25,7 +25,7 @@ You can still sign in as a bot here by passing ``bot_token`` instead of ``phone`
 Installation
 ------------
 
-This library requires Python 3.9 or higher, and Linux or macOS. Windows is not supported.
+This library requires Python 3.10 or higher, and Linux or macOS. Windows is not supported.
 
 .. code-block:: bash
 

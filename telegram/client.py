@@ -21,7 +21,7 @@ from typing import (
 )
 
 from telegram import VERSION
-from telegram.tdjson import TDJson
+from telegram.tdjson import ClientDestroyedError, TDJson
 from telegram.text import Element
 from telegram.utils import AsyncResult
 from telegram.worker import BaseWorker, SimpleWorker
@@ -30,6 +30,9 @@ logger = logging.getLogger(__name__)
 
 
 MESSAGE_HANDLER_TYPE: str = "updateNewMessage"
+
+# how long `stop` waits for tdlib to report the CLOSED authorization state
+DEFAULT_CLOSE_TIMEOUT: float = 5.0
 
 
 class AuthorizationState(enum.Enum):
@@ -147,17 +150,30 @@ class Telegram:
         if login:
             self.login()
 
-    def stop(self) -> None:
-        """Stops the client"""
+    def stop(self, close_timeout: float = DEFAULT_CLOSE_TIMEOUT) -> None:
+        """
+        Stops the client.
+
+        Args:
+            close_timeout: how long to wait for tdlib to close the session
+                before shutting down anyway
+        """
 
         if self._stopped.is_set():
             return
 
         logger.info("Stopping telegram client...")
 
-        self._close()
-        self.worker.stop()
+        try:
+            self._close(timeout=close_timeout)
+        except Exception:
+            # a broken or unresponsive tdlib must not prevent the shutdown:
+            # everything below has to run, otherwise `idle` never returns,
+            # the listener thread keeps going and the tdlib client leaks
+            logger.exception("Could not close the tdlib session cleanly, stopping anyway")
+
         self._stopped.set()
+        self.worker.stop()
 
         # wait for the tdjson listener to stop
         self._td_listener.join()
@@ -165,16 +181,29 @@ class Telegram:
         if hasattr(self, "_tdjson"):
             self._tdjson.stop()
 
-    def _close(self) -> None:
+    def _close(self, timeout: float = DEFAULT_CLOSE_TIMEOUT) -> None:
         """
         Calls `close` tdlib method and waits until authorization_state becomes CLOSED.
-        Blocking.
+
+        Blocking, but gives up after `timeout` seconds.
         """
         self.call_method("close")
 
+        deadline = time.monotonic() + timeout
+
         while self.authorization_state != AuthorizationState.CLOSED:
+            time_left = deadline - time.monotonic()
+
+            if time_left <= 0:
+                logger.warning(
+                    "tdlib has not reached the CLOSED state in %s seconds, last known state: %s",
+                    timeout,
+                    self.authorization_state,
+                )
+                return
+
             result = self.get_authorization_state()
-            self.authorization_state = self._wait_authorization_result(result)
+            self.authorization_state = self._wait_authorization_result(result, timeout=time_left)
             logger.info("Authorization state: %s", self.authorization_state)
             time.sleep(0.5)
 
@@ -545,6 +574,10 @@ class Telegram:
                 if update:
                     self._update_async_result(update)
                     self._run_handlers(update)
+            except ClientDestroyedError:
+                # nothing left to listen to, and retrying would spin
+                logger.info("[Telegram.td_listener] the tdlib client is gone, stopping")
+                break
             except Exception:
                 if self._stopped.is_set():
                     break
@@ -670,11 +703,11 @@ class Telegram:
 
         return self._send_data(data, result_id="getAuthorizationState")
 
-    def _wait_authorization_result(self, result: AsyncResult) -> AuthorizationState:
+    def _wait_authorization_result(self, result: AsyncResult, timeout: float | None = None) -> AuthorizationState:
         authorization_state = None
 
         if result:
-            result.wait(raise_exc=True)
+            result.wait(timeout=timeout, raise_exc=True)
 
             if result.update is None:
                 raise RuntimeError("Something wrong, the result update is None")

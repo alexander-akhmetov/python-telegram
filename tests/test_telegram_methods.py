@@ -1,4 +1,6 @@
 import queue
+import threading
+import time
 from unittest.mock import patch
 
 import pytest
@@ -628,6 +630,85 @@ class TestWorkerExceptionHandling:
         assert results == [{"@type": "test"}]
 
 
+class TestStop:
+    # the `telegram` fixture patches `threading`, so `_stopped` has to be a real
+    # event for these tests, and `_td_listener` stays a mock
+
+    def _prepare(self, telegram):
+        telegram._stopped = threading.Event()
+        telegram.authorization_state = AuthorizationState.READY
+
+    def test_stop_is_idempotent(self, telegram):
+        self._prepare(telegram)
+        telegram._stopped.set()
+
+        telegram.stop()
+
+        telegram._tdjson.stop.assert_not_called()
+
+    def test_stop_finishes_when_tdlib_does_not_answer(self, telegram):
+        self._prepare(telegram)
+
+        started = time.monotonic()
+        telegram.stop(close_timeout=0.2)
+        elapsed = time.monotonic() - started
+
+        assert elapsed < 3
+        assert telegram._stopped.is_set()
+        telegram._td_listener.join.assert_called_once()
+        telegram._tdjson.stop.assert_called_once()
+
+    def test_stop_finishes_when_tdlib_returns_an_error(self, telegram):
+        self._prepare(telegram)
+
+        def answer_with_error(data):
+            async_result = telegram._results.get(data["@extra"]["request_id"])
+            if async_result:
+                async_result.parse_update({"@type": "error", "code": 400, "message": "boom"})
+
+        telegram._tdjson.send.side_effect = answer_with_error
+
+        telegram.stop()
+
+        assert telegram._stopped.is_set()
+        telegram._td_listener.join.assert_called_once()
+        telegram._tdjson.stop.assert_called_once()
+
+    def test_stop_finishes_when_close_raises(self, telegram):
+        self._prepare(telegram)
+
+        with patch.object(telegram, "_close", side_effect=RuntimeError("boom")):
+            telegram.stop()
+
+        assert telegram._stopped.is_set()
+        telegram._tdjson.stop.assert_called_once()
+
+    def test_close_stops_waiting_after_the_timeout(self, telegram):
+        self._prepare(telegram)
+
+        started = time.monotonic()
+        with pytest.raises(TimeoutError):
+            telegram._close(timeout=0.2)
+
+        assert time.monotonic() - started < 3
+
+    def test_close_does_not_wait_at_all_with_a_zero_timeout(self, telegram):
+        self._prepare(telegram)
+
+        telegram._close(timeout=0)
+
+        # only the `close` request itself, no authorization state polling
+        assert telegram._tdjson.send.call_count == 1
+
+    def test_close_returns_when_the_state_is_already_closed(self, telegram):
+        self._prepare(telegram)
+        telegram.authorization_state = AuthorizationState.CLOSED
+
+        telegram._close()
+
+        assert telegram._tdjson.send.call_count == 1
+
+
 class TestListenerExceptionHandling:
     def test_listener_survives_receive_exception(self, telegram):
         import threading
@@ -649,6 +730,23 @@ class TestListenerExceptionHandling:
         telegram._listen_to_td()
 
         assert call_count == 3
+
+    def test_listener_exits_when_the_client_is_destroyed(self, telegram):
+        from telegram.tdjson import ClientDestroyedError
+
+        telegram._stopped = threading.Event()
+        call_count = 0
+
+        def destroyed_receive():
+            nonlocal call_count
+            call_count += 1
+            raise ClientDestroyedError("stopped")
+
+        telegram._tdjson.receive = destroyed_receive
+        telegram._listen_to_td()
+
+        # it breaks out instead of spinning on the same error
+        assert call_count == 1
 
     def test_listener_exits_on_exception_when_stopped(self, telegram):
         import threading

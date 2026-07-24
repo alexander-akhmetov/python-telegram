@@ -1,10 +1,12 @@
-import logging
 import argparse
 import json
-from datetime import datetime
+import logging
+import sys
+from datetime import datetime, timezone
+
+import utils
 
 from telegram.client import Telegram
-import utils
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +14,7 @@ logger = logging.getLogger(__name__)
 def confirm(message):
     sure = input(message + " ")
     if sure.lower() not in ["y", "yes"]:
-        exit(0)
+        sys.exit(0)
 
 
 def dump_my_msgs(tg, chat_id):
@@ -22,7 +24,7 @@ def dump_my_msgs(tg, chat_id):
     all_mine = []
     last_timestamp = 0
     while True:
-        last_date = "" if last_timestamp == 0 else str(datetime.fromtimestamp(last_timestamp))
+        last_date = "" if last_timestamp == 0 else str(datetime.fromtimestamp(last_timestamp, tz=timezone.utc))
         print(f".. Fetching {num_my_msgs}/{num_msgs} msgs @{msg_id} {last_date}")
         r = tg.get_chat_history(chat_id, 1000, msg_id)
         r.wait()
@@ -91,7 +93,7 @@ if __name__ == "__main__":
         r = tg.get_chat(chat_id)
         r.wait()
         title = r.update["title"]
-        print("  %20d\t%s" % (chat_id, title))
+        print(f"  {chat_id:20d}\t{title}")
         chat_map[chat_id] = r.update
 
     selected = int(input("Select a group to clear: ").strip())

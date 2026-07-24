@@ -51,11 +51,11 @@ from telegram.client import Telegram
 from telegram.text import Spoiler
 
 tg = Telegram(
-    api_id='api_id',
-    api_hash='api_hash',
-    phone='+31611111111',  # you can pass 'bot_token' instead
-    database_encryption_key='changekey123',
-    files_directory='/tmp/.tdlib_files/',
+    api_id="api_id",
+    api_hash="api_hash",
+    phone="+31611111111",  # you can pass 'bot_token' instead
+    database_encryption_key="changekey123",
+    files_directory="/tmp/.tdlib_files/",
 )
 tg.login()
 
@@ -65,7 +65,7 @@ result = tg.get_chats()
 result.wait()
 
 chat_id: int
-result = tg.send_message(chat_id, Spoiler('Hello world!'))
+result = tg.send_message(chat_id, Spoiler("Hello world!"))
 
 # `tdlib` is asynchronous, so `python-telegram` always returns an `AsyncResult` object.
 # You can receive a result with the `wait` method of this object.
@@ -78,7 +78,7 @@ tg.stop()  # You must call `stop` at the end of the script.
 You can also use `call_method` to call any [tdlib method](https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1_function.html):
 
 ``` python
-tg.call_method('getUser',  params={'user_id': user_id})
+tg.call_method("getUser", params={"user_id": user_id})
 ```
 
 More examples can be found in the [/examples/ directory](/examples/).

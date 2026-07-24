@@ -1,36 +1,30 @@
+from __future__ import annotations
+
+import base64
+import enum
+import getpass
 import hashlib
-import time
+import logging
 import queue
 import signal
-import typing
-import getpass
-import logging
-import base64
-import threading
 import tempfile
+import threading
+import time
+import typing
+from collections import defaultdict
 from pathlib import Path
+from types import FrameType
 from typing import (
     Any,
-    Dict,
-    List,
-    Type,
     Callable,
-    Optional,
-    DefaultDict,
-    Union,
-    Tuple,
     Literal,
 )
-from types import FrameType
-from collections import defaultdict
-import enum
 
 from telegram import VERSION
-from telegram.utils import AsyncResult
 from telegram.tdjson import TDJson
-from telegram.worker import BaseWorker, SimpleWorker
 from telegram.text import Element
-
+from telegram.utils import AsyncResult
+from telegram.worker import BaseWorker, SimpleWorker
 
 logger = logging.getLogger(__name__)
 
@@ -56,12 +50,12 @@ class Telegram:
         self,
         api_id: int,
         api_hash: str,
-        database_encryption_key: Union[str, bytes],
-        phone: Optional[str] = None,
-        bot_token: Optional[str] = None,
-        library_path: Optional[str] = None,
-        worker: Optional[Type[BaseWorker]] = None,
-        files_directory: Optional[Union[str, Path]] = None,
+        database_encryption_key: str | bytes,
+        phone: str | None = None,
+        bot_token: str | None = None,
+        library_path: str | None = None,
+        worker: type[BaseWorker] | None = None,
+        files_directory: str | Path | None = None,
         use_test_dc: bool = False,
         use_message_database: bool = True,
         device_model: str = "python-telegram",
@@ -73,7 +67,7 @@ class Telegram:
         tdlib_verbosity: int = 2,
         proxy_server: str = "",
         proxy_port: int = 0,
-        proxy_type: Optional[Dict[str, str]] = None,
+        proxy_type: dict[str, str] | None = None,
         use_secret_chats: bool = True,
     ) -> None:
         """
@@ -138,8 +132,8 @@ class Telegram:
             worker = SimpleWorker
         self.worker: BaseWorker = worker(queue=self._workers_queue)
 
-        self._results: Dict[str, AsyncResult] = {}
-        self._update_handlers: DefaultDict[str, List[Callable]] = defaultdict(list)
+        self._results: dict[str, AsyncResult] = {}
+        self._update_handlers: defaultdict[str, list[Callable]] = defaultdict(list)
 
         self._tdjson = TDJson(library_path=library_path, verbosity=tdlib_verbosity)
         self._run()
@@ -224,8 +218,8 @@ class Telegram:
     def send_message(
         self,
         chat_id: int,
-        text: Union[str, Element],
-        entities: Union[List[dict], None] = None,
+        text: str | Element,
+        entities: list[dict] | None = None,
     ) -> AsyncResult:
         """
         Sends a message to a chat. The chat must be in the tdlib's database.
@@ -278,7 +272,7 @@ class Telegram:
 
         return self._send_data(data)
 
-    def import_contacts(self, contacts: List[Dict[str, str]]) -> AsyncResult:
+    def import_contacts(self, contacts: list[dict[str, str]]) -> AsyncResult:
         """
         Adds new contacts or edits existing contacts by their phone numbers.
         https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1import_contacts.html
@@ -442,7 +436,7 @@ class Telegram:
 
         return self._send_data(data)
 
-    def delete_messages(self, chat_id: int, message_ids: List[int], revoke: bool = True) -> AsyncResult:
+    def delete_messages(self, chat_id: int, message_ids: list[int], revoke: bool = True) -> AsyncResult:
         """
         Delete a list of messages in a chat
 
@@ -497,7 +491,7 @@ class Telegram:
     def call_method(
         self,
         method_name: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         block: bool = False,
     ) -> AsyncResult:
         """
@@ -536,7 +530,7 @@ class Telegram:
                     break
                 logger.exception("[Telegram.td_listener] error processing update")
 
-    def _update_async_result(self, update: Dict[Any, Any]) -> typing.Optional[AsyncResult]:
+    def _update_async_result(self, update: dict[Any, Any]) -> AsyncResult | None:
         async_result = None
 
         _special_types = ("updateAuthorizationState",)  # for authorizationProcess @extra.request_id doesn't work
@@ -561,7 +555,7 @@ class Telegram:
 
         return async_result
 
-    def _run_handlers(self, update: Dict[Any, Any]) -> None:
+    def _run_handlers(self, update: dict[Any, Any]) -> None:
         update_type: str = update.get("@type", "unknown")
 
         for handler in self._update_handlers[update_type]:
@@ -589,8 +583,8 @@ class Telegram:
 
     def _send_data(
         self,
-        data: Dict[Any, Any],
-        result_id: Optional[str] = None,
+        data: dict[Any, Any],
+        result_id: str | None = None,
         block: bool = False,
     ) -> AsyncResult:
         """
@@ -618,7 +612,7 @@ class Telegram:
 
     def idle(
         self,
-        stop_signals: Tuple = (
+        stop_signals: tuple = (
             signal.SIGINT,
             signal.SIGTERM,
             signal.SIGABRT,
@@ -634,7 +628,7 @@ class Telegram:
 
         self._stopped.wait()
 
-    def _stop_signal_handler(self, signum: int, frame: Optional[FrameType] = None) -> None:
+    def _stop_signal_handler(self, signum: int, frame: FrameType | None = None) -> None:
         logger.info("Signal %s received!", signum)
         self.stop()
 
@@ -690,7 +684,7 @@ class Telegram:
         if self.proxy_server:
             self._send_add_proxy()
 
-        actions: Dict[AuthorizationState, Callable[[], AsyncResult]] = {
+        actions: dict[AuthorizationState, Callable[[], AsyncResult]] = {
             AuthorizationState.NONE: self.get_authorization_state,
             AuthorizationState.WAIT_TDLIB_PARAMETERS: self._set_initial_params,
             AuthorizationState.WAIT_ENCRYPTION_KEY: self._send_encryption_key,
@@ -746,7 +740,7 @@ class Telegram:
             "files_directory": str(self.files_directory / "files"),
             "use_secret_chats": self.use_secret_chats,
         }
-        data: Dict[str, typing.Any] = {
+        data: dict[str, typing.Any] = {
             "@type": "setTdlibParameters",
             "parameters": parameters,
             # since tdlib 1.8.6
@@ -805,7 +799,7 @@ class Telegram:
 
         return self._send_data(data, result_id="updateAuthorizationState")
 
-    def _send_telegram_code(self, code: Optional[str] = None) -> AsyncResult:
+    def _send_telegram_code(self, code: str | None = None) -> AsyncResult:
         logger.info("Sending code")
 
         if code is None:
@@ -832,7 +826,7 @@ class Telegram:
 
         return self.authorization_state
 
-    def _send_password(self, password: Optional[str] = None) -> AsyncResult:
+    def _send_password(self, password: str | None = None) -> AsyncResult:
         logger.info("Sending password")
 
         if password is None:
@@ -861,7 +855,7 @@ class Telegram:
 
         return self.authorization_state
 
-    def _register_user(self, first: Optional[str] = None, last: Optional[str] = None) -> AsyncResult:
+    def _register_user(self, first: str | None = None, last: str | None = None) -> AsyncResult:
         logger.info("Registering user")
 
         if first is None:

@@ -1,7 +1,9 @@
-import uuid
-import threading
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Optional
+import threading
+import uuid
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from telegram.client import Telegram
@@ -16,7 +18,7 @@ class AsyncResult:
     After each API call, you receive AsyncResult object, which you can use to get results back.
     """
 
-    def __init__(self, client: "Telegram", result_id: Optional[str] = None) -> None:
+    def __init__(self, client: Telegram, result_id: str | None = None) -> None:
         self.client = client
 
         if result_id:
@@ -24,17 +26,17 @@ class AsyncResult:
         else:
             self.id = uuid.uuid4().hex
 
-        self.request: Optional[Dict[Any, Any]] = None
+        self.request: dict[Any, Any] | None = None
         self.ok_received = False
         self.error = False
-        self.error_info: Optional[Dict[Any, Any]] = None
-        self.update: Optional[Dict[Any, Any]] = None
+        self.error_info: dict[Any, Any] | None = None
+        self.update: dict[Any, Any] | None = None
         self._ready = threading.Event()
 
     def __str__(self) -> str:
         return f"AsyncResult <{self.id}>"
 
-    def wait(self, timeout: Optional[int] = None, raise_exc: bool = False) -> None:
+    def wait(self, timeout: int | None = None, raise_exc: bool = False) -> None:
         """
         Blocking method to wait for the result
         """
@@ -44,7 +46,7 @@ class AsyncResult:
         if raise_exc and self.error:
             raise RuntimeError(f"Telegram error: {self.error_info}")
 
-    def parse_update(self, update: Dict[Any, Any]) -> bool:
+    def parse_update(self, update: dict[Any, Any]) -> bool:
         update_type = update.get("@type")
 
         logger.debug("update id=%s type=%s received", self.id, update_type)

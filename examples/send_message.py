@@ -1,8 +1,9 @@
-import logging
 import argparse
+import logging
 import threading
 
 from utils import setup_logging
+
 from telegram.client import Telegram
 
 """

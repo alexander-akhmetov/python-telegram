@@ -1,10 +1,12 @@
+from __future__ import annotations
+
+import ctypes.util
+import importlib.resources
 import json
 import logging
 import platform
-import ctypes.util
-from ctypes import CDLL, CFUNCTYPE, c_int, c_char_p, c_double, c_void_p, c_longlong
-from typing import Any, Dict, Optional, Union
-import importlib.resources
+from ctypes import CDLL, CFUNCTYPE, c_char_p, c_double, c_int, c_longlong, c_void_p
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,7 @@ def _get_tdjson_lib_path() -> str:
 
 
 class TDJson:
-    def __init__(self, library_path: Optional[str] = None, verbosity: int = 2) -> None:
+    def __init__(self, library_path: str | None = None, verbosity: int = 2) -> None:
         if library_path is None:
             library_path = _get_tdjson_lib_path()
         logger.info('Using shared library "%s"', library_path)
@@ -88,28 +90,28 @@ class TDJson:
         self._c_on_fatal_error_callback = fatal_error_callback_type(on_fatal_error_callback)
         self._td_set_log_fatal_error_callback(self._c_on_fatal_error_callback)
 
-    def send(self, query: Dict[Any, Any]) -> None:
+    def send(self, query: dict[Any, Any]) -> None:
         dumped_query = json.dumps(query).encode("utf-8")
         self._td_json_client_send(self.td_json_client, dumped_query)
         logger.debug("[me ==>] Sent %s", dumped_query)
 
-    def receive(self) -> Union[None, Dict[Any, Any]]:
+    def receive(self) -> None | dict[Any, Any]:
         result_str = self._td_json_client_receive(self.td_json_client, 1.0)
 
         if result_str:
-            result: Dict[Any, Any] = json.loads(result_str.decode("utf-8"))
+            result: dict[Any, Any] = json.loads(result_str.decode("utf-8"))
             logger.debug("[me <==] Received %s", result)
 
             return result
 
         return None
 
-    def td_execute(self, query: Dict[Any, Any]) -> Union[Dict[Any, Any], Any]:
+    def td_execute(self, query: dict[Any, Any]) -> dict[Any, Any] | Any:
         dumped_query = json.dumps(query).encode("utf-8")
         result_str = self._td_json_client_execute(self.td_json_client, dumped_query)
 
         if result_str:
-            result: Dict[Any, Any] = json.loads(result_str.decode("utf-8"))
+            result: dict[Any, Any] = json.loads(result_str.decode("utf-8"))
 
             return result
 

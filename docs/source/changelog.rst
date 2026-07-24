@@ -2,8 +2,8 @@
 Changelog
 =========
 
-[unreleased]
-------------
+[1.0.0] - 2026-07-25
+--------------------
 
 - Python 3.9 is no longer supported.
 - Added support for Python 3.13 and 3.14.

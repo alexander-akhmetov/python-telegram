@@ -29,9 +29,9 @@ requires-python = ">=3.9"
 
 [project.urls]
 Source = "https://github.com/alexander-akhmetov/python-telegram"
-Documentation = "https://python-telegram.readthedocs.io/en/latest/"
-Tutorial = "https://python-telegram.readthedocs.io/en/latest/tutorial.html"
-Changelog = "https://python-telegram.readthedocs.io/en/latest/changelog.html"
+Documentation = "https://python-telegram.readthedocs.io/latest/"
+Tutorial = "https://python-telegram.readthedocs.io/latest/tutorial.html"
+Changelog = "https://python-telegram.readthedocs.io/latest/changelog.html"
 
 [tool.setuptools]
 packages = ["telegram"]

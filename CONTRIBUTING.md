@@ -2,8 +2,8 @@
 
 Pull requests are welcome!
 
-Feel free to open an issue if you find a bug, have new ideas, suggestions, 
-or spot a mistake in the [documentation](https://python-telegram.readthedocs.io/en/latest/).
+Feel free to open an issue if you find a bug, have new ideas, suggestions,
+or spot a mistake in the [documentation](https://python-telegram.readthedocs.io/latest/).
 
 ## Reporting bugs
 
@@ -15,7 +15,7 @@ Try to include steps to reproduce the bug, a detailed description, and some samp
 
 ## Pull request process
 
-1. Fork the repository and create a new branch from `master`.
+1. Fork the repository and create a new branch from `main`.
 2. Make your changes and don't forget to add new tests :)
 3. Ensure the tests pass with your changes.
 4. Create a new PR!
@@ -26,7 +26,7 @@ The project uses [ruff](https://docs.astral.sh/ruff/) as an autoformatter and li
 
 ## Tests
 
-To run tests you need to install [tox](https://tox.readthedocs.io/en/latest/).
+To run tests you need to install [tox](https://tox.wiki/).
 
 Run tests:
 

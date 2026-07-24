@@ -20,7 +20,7 @@ import telegram  # Import the package to access __version__
 # -- Project information -----------------------------------------------------
 
 project = "python-telegram"
-copyright = "2024, Alexander Akhmetov"
+copyright = "2018-2026, Alexander Akhmetov"
 author = "Alexander Akhmetov"
 
 html_show_sourcelink = False
@@ -42,9 +42,6 @@ release = telegram.__version__
 # ones.
 extensions = ["sphinx.ext.autodoc", "sphinx_immaterial"]
 
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ["_templates"]
-
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
@@ -59,7 +56,7 @@ master_doc = "index"
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -82,44 +79,13 @@ html_theme = "sphinx_immaterial"
 # documentation.
 #
 html_theme_options = {
-    "logo_name": "123",
-    "github_user": "alexander-akhmetov",
-    "github_repo": "python-telegram",
-    "github_button": True,
-    "github_type": "star",
-    "extra_nav_links": {
-        "Main page": "/",
-        "1": "",
-        "GitHub": "https://github.com/alexander-akhmetov/python-telegram",
-        "DockerHub": "https://hub.docker.com/r/akhmetov/python-telegram/",
-        "PyPi": "https://pypi.org/project/python-telegram/",
-        "2": "",
-    },
+    "site_url": "https://python-telegram.readthedocs.io/",
+    "repo_url": "https://github.com/alexander-akhmetov/python-telegram",
+    "repo_name": "python-telegram",
     "palette": {
         "primary": "deep-orange",
         "accent": "deep-orange",
     },
-}
-
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
-
-# Custom sidebar templates, must be a dictionary that maps document names
-# to template names.
-#
-# The default sidebars (for documents that don't match any pattern) are
-# defined by theme itself.  Builtin themes are using these templates by
-# default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
-# 'searchbox.html']``.
-#
-html_sidebars = {
-    "**": [
-        "about.html",
-        "navigation.html",
-        "searchbox.html",
-    ]
 }
 
 
@@ -179,7 +145,7 @@ texinfo_documents = [
         "python-telegram Documentation",
         author,
         "python-telegram",
-        "One line description of project.",
+        "Python client for the Telegram API, built on tdlib.",
         "Miscellaneous",
     ),
 ]

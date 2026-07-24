@@ -13,7 +13,9 @@ Install the library:
 
      python3 -m pip install python-telegram
 
-Let's create a simple echo-bot that sends "pong" when it receives "ping".
+Let's create a simple echo-bot that replies "pong" when it receives "ping".
+
+You need an ``api_id`` and an ``api_hash``. Get them by registering a new application at `my.telegram.org/apps <https://my.telegram.org/apps/>`_.
 
 Initialize a new Telegram client with your credentials:
 
@@ -29,20 +31,23 @@ Initialize a new Telegram client with your credentials:
     )
 
 .. note::
-    The library configures ``tdlib`` to store the messages database and received files in the ``/tmp/.tdlib_files/{phone_number}/``.
-    You can change this behaviour with the ``files_directory`` parameter.
+    By default, the library tells ``tdlib`` to store the message database and the downloaded files in a temporary directory,
+    ``/tmp/.tdlib_files/<md5 of your phone number or bot token>/``.
+    Pass the ``files_directory`` parameter to store them somewhere else.
+    Use it if you want to keep the database between runs, because most systems clean up ``/tmp``.
 
 .. note::
-    You can pass bot tokens by passing ``bot_token`` instead of ``phone``.
+    To sign in as a bot, pass ``bot_token`` instead of ``phone``.
 
-Now you need to login to the Telegram. You can do it by calling the `login` method:
+Now you need to log in. Call the ``login`` method:
 
 .. code-block:: python
 
     tg.login()
 
-In this example, we use a blocking version of the ``login`` function. You can find an example for non-blocking usage here: :ref:`non_blocking_login`.
-Telegram will send you a code via SMS or as a Telegram message. If you have enabled 2FA, you will also be asked for your password. After successful login, you can start using the library:
+This example uses the blocking version of ``login``. For an example of non-blocking usage, see :ref:`non_blocking_login`.
+Telegram sends you a code, either as an SMS or as a Telegram message. If you have two-factor authentication enabled, you are asked for your password as well.
+After you sign in, you can start using the library:
 
 .. code-block:: python
 
@@ -53,10 +58,10 @@ Telegram will send you a code via SMS or as a Telegram message. If you have enab
     tg.add_message_handler(new_message_handler)
     tg.idle()  # Blocking, waiting for CTRL+C.
 
-This code adds a new message handler that prints a simple text every time it receives a new message.
-``tg.idle()`` is neccessary to block your script and wait for an exit shortcut (``CTRL+C``).
+This code adds a message handler that prints a line every time the client receives a new message.
+``tg.idle()`` is necessary to block the script and wait for an exit signal (``CTRL+C``).
 
-If you run this code, you will see something like that:
+If you run this code, you see something like this:
 
 .. code-block:: sh
 
@@ -112,12 +117,14 @@ Full code of our new bot:
     tg.add_message_handler(new_message_handler)
     tg.idle()
 
-Done! You have created your first client for the Telegram Messenger.
+Done! You have written your first Telegram client.
 
 idle and stop
 -------------
 
-You must call `stop` to properly stop python-telegram and tdlib.
-It calls tdlib's `close` method and waits until it's finished.
+You must call ``stop`` to shut down ``python-telegram`` and ``tdlib`` cleanly.
+It calls the ``close`` method of ``tdlib`` and waits until it has finished.
 
-When you use `idle`, it automatically waits until you call `stop` in another thread, or one of the stop signals is received.
+``idle`` blocks until you call ``stop`` from another thread, or until the process receives one of the stop signals.
+By default these are ``SIGINT``, ``SIGTERM`` and ``SIGABRT``; you can change them with the ``stop_signals`` parameter.
+When one of them arrives, ``idle`` calls ``stop`` for you, which is why the example above does not call it directly.

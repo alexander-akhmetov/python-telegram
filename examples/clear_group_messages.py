@@ -82,7 +82,7 @@ if __name__ == "__main__":
     print(result.update)
 
     # get chats
-    result = tg.get_chats(9223372036854775807)  # const 2^62-1: from the first
+    result = tg.get_chats(limit=100)
     result.wait()
     chats = result.update["chat_ids"]
 

@@ -74,9 +74,9 @@ tg = Telegram(
 )
 tg.login()
 
-# If this is the first run, the library needs to preload all chats.
-# Otherwise, the message will not be sent.
-result = tg.get_chats()
+# The chat must be in the tdlib database before you can send a message to it.
+# `get_chats` loads up to `limit` chats from the main chat list.
+result = tg.get_chats(limit=100)
 result.wait()
 
 chat_id = 123456789

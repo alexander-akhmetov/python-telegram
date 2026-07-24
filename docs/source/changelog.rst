@@ -13,6 +13,8 @@ Changelog
 - Calling a method after ``stop`` raises ``ClientDestroyedError`` instead of crashing the process. The destroyed tdlib handle was passed to the C library as a ``NULL`` pointer.
 - An exception raised by an update handler no longer stops the worker thread. The error is logged and the worker keeps processing the queue.
 - When the handler queue is full, the update is dropped and an error is logged instead of raising ``queue.Full``.
+- ``get_chats`` no longer sends the ``offset_order`` and ``offset_chat_id`` parameters. tdlib removed them from ``getChats`` in 1.8.0 and silently ignored them since then, so passing them had no effect. The signature is now ``get_chats(limit=100, chat_list=None)``, which also makes it possible to read the archive and chat folders instead of only the main chat list. This is a breaking change for code that passes the offsets.
+- Added ``load_chats``, which wraps the tdlib ``loadChats`` method.
 
 [0.19.0] - 2024-06-23
 ---------------------

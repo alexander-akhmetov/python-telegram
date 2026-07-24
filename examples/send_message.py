@@ -34,9 +34,9 @@ if __name__ == "__main__":
     # you must call login method before others
     tg.login()
 
-    # if this is the first run, library needs to preload all chats
-    # otherwise the message will not be sent
-    get_chats_result = tg.get_chats()
+    # the chat must be in the tdlib database before you can send a message to it,
+    # `get_chats` loads up to `limit` chats from the main chat list
+    get_chats_result = tg.get_chats(limit=100)
     # `tdlib` is asynchronous, so `python-telegram` always returns you an `AsyncResult` object.
     # You can wait for a result with the blocking `wait` method.
     get_chats_result.wait()

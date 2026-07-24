@@ -350,6 +350,54 @@ class TestTelegram:
 
         tg._tdjson.send.assert_called_once_with(exp_data)
 
+    def test_send_email_address(self, telegram):
+        telegram._send_email_address("me@example.org")
+
+        exp_data = {
+            "@type": "setAuthenticationEmailAddress",
+            "email_address": "me@example.org",
+            "@extra": {"request_id": "updateAuthorizationState"},
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
+    def test_send_email_code(self, telegram):
+        telegram._send_email_code("123456")
+
+        exp_data = {
+            "@type": "checkAuthenticationEmailCode",
+            "code": {
+                "@type": "emailAddressAuthenticationCode",
+                "code": "123456",
+            },
+            "@extra": {"request_id": "updateAuthorizationState"},
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
+
+class TestAuthorizationState:
+    @pytest.mark.parametrize(
+        "state",
+        [
+            # every authorizationState type tdlib 1.8.31 can emit
+            "authorizationStateWaitTdlibParameters",
+            "authorizationStateWaitPhoneNumber",
+            "authorizationStateWaitEmailAddress",
+            "authorizationStateWaitEmailCode",
+            "authorizationStateWaitOtherDeviceConfirmation",
+            "authorizationStateWaitCode",
+            "authorizationStateWaitRegistration",
+            "authorizationStateWaitPassword",
+            "authorizationStateReady",
+            "authorizationStateLoggingOut",
+            "authorizationStateClosing",
+            "authorizationStateClosed",
+        ],
+    )
+    def test_every_tdlib_state_is_known(self, state):
+        assert AuthorizationState(state).value == state
+
 
 class TestTelegram__update_async_result:
     def test_update_async_result_returns_async_result_with_same_id(self, telegram):
@@ -477,6 +525,47 @@ class TestTelegram__login_non_blocking:
         assert state == telegram.authorization_state == AuthorizationState.READY
 
         assert telegram._tdjson.send.call_count == 0
+
+    def test_login_process_with_email(self, telegram):
+        telegram.authorization_state = AuthorizationState.WAIT_PHONE_NUMBER
+
+        def _get_async_result(data, request_id=None):
+            result = AsyncResult(client=telegram)
+
+            result.update = data
+            result._ready.set()
+            result.id = request_id
+
+            return result
+
+        telegram._send_phone_number_or_bot_token = lambda: _get_async_result(
+            data={"authorization_state": {"@type": "authorizationStateWaitEmailAddress"}}
+        )
+        telegram._send_email_address = lambda _: _get_async_result(
+            data={"authorization_state": {"@type": "authorizationStateWaitEmailCode"}}
+        )
+        telegram._send_email_code = lambda _: _get_async_result(
+            data={"authorization_state": {"@type": "authorizationStateReady"}}
+        )
+
+        state = telegram.login(blocking=False)
+        assert state == AuthorizationState.WAIT_EMAIL_ADDRESS
+        telegram.send_email_address("me@example.org")
+
+        state = telegram.login(blocking=False)
+        assert state == AuthorizationState.WAIT_EMAIL_CODE
+        telegram.send_email_code("123456")
+
+        state = telegram.login(blocking=False)
+        assert state == telegram.authorization_state == AuthorizationState.READY
+
+    def test_login_raises_on_state_without_action(self, telegram):
+        telegram.authorization_state = AuthorizationState.LOGGING_OUT
+
+        with pytest.raises(RuntimeError) as excinfo:
+            telegram.login(blocking=False)
+
+        assert "LOGGING_OUT" in str(excinfo.value)
 
 
 class TestWorkerExceptionHandling:

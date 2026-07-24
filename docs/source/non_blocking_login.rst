@@ -52,6 +52,13 @@ Let's have a look at the example.
     # You can also check that tg.authorization_state is AuthorizationState.READY.
 
 The code checks the authorization state, sends the code or the password, and then continues the login process.
-Only two authorization states stop and wait for input: ``AuthorizationState.WAIT_CODE`` and ``AuthorizationState.WAIT_PASSWORD``.
+
+These authorization states stop and wait for input:
+
+- ``AuthorizationState.WAIT_CODE``: send the code with ``send_code``.
+- ``AuthorizationState.WAIT_EMAIL_ADDRESS``: Telegram asks for the login email address of the account. Send it with ``send_email_address``.
+- ``AuthorizationState.WAIT_EMAIL_CODE``: send the code from that email with ``send_email_code``.
+- ``AuthorizationState.WAIT_PASSWORD``: send the password with ``send_password``.
+- ``AuthorizationState.WAIT_REGISTRATION``: the account does not exist yet. Send the first and the last name with ``register_user``.
 
 You can find the full example in the repository, ``examples/get_me_non_blocking_login.py``.

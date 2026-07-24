@@ -37,10 +37,16 @@ class AuthorizationState(enum.Enum):
     WAIT_CODE = "authorizationStateWaitCode"
     WAIT_PASSWORD = "authorizationStateWaitPassword"
     WAIT_TDLIB_PARAMETERS = "authorizationStateWaitTdlibParameters"
+    # only tdlib 1.8.5 and older emit this state, newer versions take the
+    # encryption key in setTdlibParameters
     WAIT_ENCRYPTION_KEY = "authorizationStateWaitEncryptionKey"
     WAIT_PHONE_NUMBER = "authorizationStateWaitPhoneNumber"
+    WAIT_EMAIL_ADDRESS = "authorizationStateWaitEmailAddress"
+    WAIT_EMAIL_CODE = "authorizationStateWaitEmailCode"
+    WAIT_OTHER_DEVICE_CONFIRMATION = "authorizationStateWaitOtherDeviceConfirmation"
     WAIT_REGISTRATION = "authorizationStateWaitRegistration"
     READY = "authorizationStateReady"
+    LOGGING_OUT = "authorizationStateLoggingOut"
     CLOSING = "authorizationStateClosing"
     CLOSED = "authorizationStateClosed"
 
@@ -686,6 +692,12 @@ class Telegram:
          - AuthorizationState.WAIT_CODE if a telegram code is required.
            The caller should ask the telegram code
            to the end user then call send_code(code)
+         - AuthorizationState.WAIT_EMAIL_ADDRESS if an email address is required.
+           The caller should ask the email address
+           to the end user and then call send_email_address(email_address)
+         - AuthorizationState.WAIT_EMAIL_CODE if an email code is required.
+           The caller should ask the code sent to the email address
+           to the end user and then call send_email_code(code)
          - AuthorizationState.WAIT_PASSWORD if a telegram password is required.
            The caller should ask the telegram password
            to the end user and then call send_password(password)
@@ -703,6 +715,8 @@ class Telegram:
             AuthorizationState.WAIT_TDLIB_PARAMETERS: self._set_initial_params,
             AuthorizationState.WAIT_ENCRYPTION_KEY: self._send_encryption_key,
             AuthorizationState.WAIT_PHONE_NUMBER: self._send_phone_number_or_bot_token,
+            AuthorizationState.WAIT_EMAIL_ADDRESS: self._send_email_address,
+            AuthorizationState.WAIT_EMAIL_CODE: self._send_email_code,
             AuthorizationState.WAIT_CODE: self._send_telegram_code,
             AuthorizationState.WAIT_PASSWORD: self._send_password,
             AuthorizationState.WAIT_REGISTRATION: self._register_user,
@@ -710,6 +724,8 @@ class Telegram:
 
         blocking_actions = (
             AuthorizationState.WAIT_CODE,
+            AuthorizationState.WAIT_EMAIL_ADDRESS,
+            AuthorizationState.WAIT_EMAIL_CODE,
             AuthorizationState.WAIT_PASSWORD,
             AuthorizationState.WAIT_REGISTRATION,
         )
@@ -725,7 +741,14 @@ class Telegram:
             if not blocking and self.authorization_state in blocking_actions:
                 return self.authorization_state
 
-            result = actions[self.authorization_state]()
+            action = actions.get(self.authorization_state)
+
+            if action is None:
+                raise RuntimeError(
+                    f"Can not continue the login process from the authorization state {self.authorization_state}"
+                )
+
+            result = action()
 
             if not isinstance(result, AuthorizationState):
                 self.authorization_state = self._wait_authorization_result(result)
@@ -812,6 +835,71 @@ class Telegram:
         data = {"@type": "checkAuthenticationBotToken", "token": self.bot_token}
 
         return self._send_data(data, result_id="updateAuthorizationState")
+
+    def _send_email_address(self, email_address: str | None = None) -> AsyncResult:
+        logger.info("Sending email address")
+
+        if email_address is None:
+            email_address = input("Enter email address:")
+        data = {
+            "@type": "setAuthenticationEmailAddress",
+            "email_address": email_address,
+        }
+
+        return self._send_data(data, result_id="updateAuthorizationState")
+
+    def send_email_address(self, email_address: str) -> AuthorizationState:
+        """
+        Sets the email address of the user and continues the authorization process
+
+        Args:
+          email_address: the email address of the user.
+          If email_address is None, it will be asked to the user using the input() function
+
+        Returns
+         - AuthorizationState. The caller has to call `login` to continue the login process.
+
+        Raises:
+         - RuntimeError if the login failed
+        """
+        result = self._send_email_address(email_address)
+        self.authorization_state = self._wait_authorization_result(result)
+
+        return self.authorization_state
+
+    def _send_email_code(self, code: str | None = None) -> AsyncResult:
+        logger.info("Sending email code")
+
+        if code is None:
+            code = input("Enter email code:")
+        data = {
+            "@type": "checkAuthenticationEmailCode",
+            "code": {
+                "@type": "emailAddressAuthenticationCode",
+                "code": str(code),
+            },
+        }
+
+        return self._send_data(data, result_id="updateAuthorizationState")
+
+    def send_email_code(self, code: str) -> AuthorizationState:
+        """
+        Verifies the code sent to the email address and continues the authorization process
+
+        Args:
+          code: the code to be verified.
+          If code is None, it will be asked to the user using the input() function
+
+        Returns
+         - AuthorizationState. The caller has to call `login` to continue the login process.
+
+        Raises:
+         - RuntimeError if the login failed
+        """
+        result = self._send_email_code(code)
+        self.authorization_state = self._wait_authorization_result(result)
+
+        return self.authorization_state
 
     def _send_telegram_code(self, code: str | None = None) -> AsyncResult:
         logger.info("Sending code")

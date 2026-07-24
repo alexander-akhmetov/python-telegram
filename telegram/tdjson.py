@@ -11,6 +11,10 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+class ClientDestroyedError(RuntimeError):
+    """Raised when a TDJson client is used after it has been stopped"""
+
+
 def _get_tdjson_lib_path() -> str:
     system_library = ctypes.util.find_library("tdjson")
 
@@ -45,7 +49,7 @@ class TDJson:
         self._td_json_client_create.restype = c_void_p
         self._td_json_client_create.argtypes = []
 
-        self.td_json_client = self._td_json_client_create()
+        self.td_json_client: int | None = self._td_json_client_create()
 
         self._td_json_client_receive = self._tdjson.td_json_client_receive
         self._td_json_client_receive.restype = c_char_p
@@ -90,13 +94,25 @@ class TDJson:
         self._c_on_fatal_error_callback = fatal_error_callback_type(on_fatal_error_callback)
         self._td_set_log_fatal_error_callback(self._c_on_fatal_error_callback)
 
+    def _get_client(self) -> int:
+        """
+        Returns the client handle, or raises if the client has been destroyed.
+
+        tdlib dereferences this handle, so passing a destroyed (NULL) one
+        crashes the whole process instead of raising.
+        """
+        if self.td_json_client is None:
+            raise ClientDestroyedError("The tdlib client is stopped and cannot be used anymore")
+
+        return self.td_json_client
+
     def send(self, query: dict[Any, Any]) -> None:
         dumped_query = json.dumps(query).encode("utf-8")
-        self._td_json_client_send(self.td_json_client, dumped_query)
+        self._td_json_client_send(self._get_client(), dumped_query)
         logger.debug("[me ==>] Sent %s", dumped_query)
 
     def receive(self) -> None | dict[Any, Any]:
-        result_str = self._td_json_client_receive(self.td_json_client, 1.0)
+        result_str = self._td_json_client_receive(self._get_client(), 1.0)
 
         if result_str:
             result: dict[Any, Any] = json.loads(result_str.decode("utf-8"))
@@ -108,7 +124,7 @@ class TDJson:
 
     def td_execute(self, query: dict[Any, Any]) -> dict[Any, Any] | Any:
         dumped_query = json.dumps(query).encode("utf-8")
-        result_str = self._td_json_client_execute(self.td_json_client, dumped_query)
+        result_str = self._td_json_client_execute(self._get_client(), dumped_query)
 
         if result_str:
             result: dict[Any, Any] = json.loads(result_str.decode("utf-8"))

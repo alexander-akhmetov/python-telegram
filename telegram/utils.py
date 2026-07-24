@@ -36,7 +36,7 @@ class AsyncResult:
     def __str__(self) -> str:
         return f"AsyncResult <{self.id}>"
 
-    def wait(self, timeout: int | None = None, raise_exc: bool = False) -> None:
+    def wait(self, timeout: float | None = None, raise_exc: bool = False) -> None:
         """
         Blocking method to wait for the result
         """

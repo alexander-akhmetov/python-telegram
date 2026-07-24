@@ -1,5 +1,7 @@
 from unittest.mock import Mock, patch
 
+import pytest
+
 from telegram.tdjson import TDJson, _get_tdjson_lib_path
 
 
@@ -71,6 +73,25 @@ class TestTDJson:
         tdjson.stop()
         tdjson.stop()
         tdjson._td_json_client_destroy.assert_called_once()
+
+    @pytest.mark.parametrize(
+        ("method", "args"),
+        [
+            ("send", ({"@type": "getAuthorizationState"},)),
+            ("receive", ()),
+            ("td_execute", ({"@type": "getAuthorizationState"},)),
+        ],
+    )
+    def test_methods_raise_after_stop(self, method, args):
+        tdjson = self._make_tdjson()
+        tdjson.stop()
+
+        with pytest.raises(RuntimeError, match="stopped"):
+            getattr(tdjson, method)(*args)
+
+        tdjson._td_json_client_send.assert_not_called()
+        tdjson._td_json_client_receive.assert_not_called()
+        tdjson._td_json_client_execute.assert_not_called()
 
     def test_fatal_error_callback_stored_on_instance(self):
         tdjson = self._make_tdjson()

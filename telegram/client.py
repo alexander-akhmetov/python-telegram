@@ -12,11 +12,11 @@ import threading
 import time
 import typing
 from collections import defaultdict
+from collections.abc import Callable
 from pathlib import Path
 from types import FrameType
 from typing import (
     Any,
-    Callable,
     Literal,
 )
 

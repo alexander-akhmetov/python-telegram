@@ -425,6 +425,38 @@ class TestTelegram__update_async_result:
         assert new_async_result.id == "updateAuthorizationState"
 
 
+class TestTelegram__send_data:
+    def test_raises_if_a_request_with_the_same_id_is_in_flight(self, telegram):
+        first = telegram._send_data({"@type": "checkAuthenticationCode"}, result_id="updateAuthorizationState")
+
+        with pytest.raises(RuntimeError, match="already in flight"):
+            telegram._send_data({"@type": "checkAuthenticationPassword"}, result_id="updateAuthorizationState")
+
+        # the pending result must stay reachable, otherwise nothing can resolve it
+        assert telegram._results["updateAuthorizationState"] is first
+
+    def test_reuses_the_id_after_the_previous_request_is_resolved(self, telegram):
+        telegram._send_data({"@type": "checkAuthenticationCode"}, result_id="updateAuthorizationState")
+        telegram._update_async_result(
+            {
+                "@type": "updateAuthorizationState",
+                "authorization_state": {"@type": "authorizationStateReady"},
+            }
+        )
+
+        second = telegram._send_data({"@type": "checkAuthenticationPassword"}, result_id="updateAuthorizationState")
+
+        assert telegram._results["updateAuthorizationState"] is second
+
+    def test_add_proxy_can_be_sent_repeatedly(self, telegram):
+        telegram.proxy_server = "example.com"
+
+        first = telegram._send_add_proxy()
+        second = telegram._send_add_proxy()
+
+        assert first.id != second.id
+
+
 class TestTelegram__login:
     def test_login_process_should_do_nothing_if_already_authorized(self, telegram):
         telegram.authorization_state = AuthorizationState.READY

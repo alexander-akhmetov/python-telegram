@@ -261,16 +261,42 @@ class TestTelegram:
         telegram._tdjson.send.assert_called_once_with(exp_data)
 
     def test_get_chats(self, telegram):
-        offset_order = 1
-        offset_chat_id = 1
         limit = 100
 
-        async_result = telegram.get_chats(offset_order=offset_order, offset_chat_id=offset_chat_id, limit=limit)
+        async_result = telegram.get_chats(limit=limit)
 
         exp_data = {
             "@type": "getChats",
-            "offset_order": offset_order,
-            "offset_chat_id": offset_chat_id,
+            "chat_list": None,
+            "limit": limit,
+            "@extra": {"request_id": async_result.id},
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
+    def test_get_chats_with_chat_list(self, telegram):
+        limit = 10
+        chat_list = {"@type": "chatListArchive"}
+
+        async_result = telegram.get_chats(limit=limit, chat_list=chat_list)
+
+        exp_data = {
+            "@type": "getChats",
+            "chat_list": chat_list,
+            "limit": limit,
+            "@extra": {"request_id": async_result.id},
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
+    def test_load_chats(self, telegram):
+        limit = 100
+
+        async_result = telegram.load_chats(limit=limit)
+
+        exp_data = {
+            "@type": "loadChats",
+            "chat_list": None,
             "limit": limit,
             "@extra": {"request_id": async_result.id},
         }

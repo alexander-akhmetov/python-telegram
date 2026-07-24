@@ -396,9 +396,20 @@ class Telegram:
 
         return self.call_method("getUserFullInfo", params={"user_id": user_id})
 
-    def get_chats(self, offset_order: int = 0, offset_chat_id: int = 0, limit: int = 100) -> AsyncResult:
+    def get_chats(self, limit: int = 100, chat_list: dict | None = None) -> AsyncResult:
         """
-        Returns a list of chats.
+        Returns an ordered list of chats from the beginning of a chat list.
+
+        tdlib loads chats from the server until ``limit`` chats are available
+        or the end of the list is reached, so this method also saves those
+        chats to the database.
+
+        https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1get_chats.html
+
+        Args:
+            limit: the maximum number of chats to return
+            chat_list: the chat list to return chats from, the main chat list
+                if not set. For example: ``{'@type': 'chatListArchive'}``
 
         Returns:
             AsyncResult
@@ -407,6 +418,7 @@ class Telegram:
 
                 {
                     '@type': 'chats',
+                    'total_count': 10,
                     'chat_ids': [...],
                     '@extra': {
                         'request_id': '...'
@@ -415,8 +427,36 @@ class Telegram:
         """
         data = {
             "@type": "getChats",
-            "offset_order": offset_order,
-            "offset_chat_id": offset_chat_id,
+            "chat_list": chat_list,
+            "limit": limit,
+        }
+
+        return self._send_data(data)
+
+    def load_chats(self, limit: int = 100, chat_list: dict | None = None) -> AsyncResult:
+        """
+        Loads more chats from a chat list.
+
+        The chats are not returned by this method, they are sent through
+        updates. tdlib chooses how many chats to load and can load fewer
+        than ``limit``.
+
+        https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1load_chats.html
+
+        Args:
+            limit: the maximum number of chats to load
+            chat_list: the chat list to load chats from, the main chat list
+                if not set. For example: ``{'@type': 'chatListArchive'}``
+
+        Returns:
+            AsyncResult
+
+            The update will be ``{'@type': 'ok'}``, or an error with the code
+            404 when all the chats in the list have already been loaded.
+        """
+        data = {
+            "@type": "loadChats",
+            "chat_list": chat_list,
             "limit": limit,
         }
 

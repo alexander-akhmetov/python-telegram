@@ -619,6 +619,18 @@ class Telegram:
         if not result_id and "request_id" in data["@extra"]:
             result_id = data["@extra"]["request_id"]
 
+        if result_id:
+            pending = self._results.get(result_id)
+
+            if pending is not None and not pending._ready.is_set():
+                # Overwriting the entry would leave `pending` unreachable from
+                # `_update_async_result`, so nothing would ever resolve it and
+                # anyone waiting on it would block forever.
+                raise RuntimeError(
+                    f"A request with id={result_id} is already in flight. "
+                    "Authorization calls share a fixed request id, so they cannot be made concurrently."
+                )
+
         async_result = AsyncResult(client=self, result_id=result_id)
         data["@extra"]["request_id"] = async_result.id
         self._results[async_result.id] = async_result
@@ -828,7 +840,9 @@ class Telegram:
             "type": self.proxy_type,
         }
 
-        return self._send_data(data, result_id="setProxy")
+        # no fixed result_id: the result is never awaited, and `login` may send
+        # this more than once while a previous addProxy is still in flight
+        return self._send_data(data)
 
     def _send_bot_token(self) -> AsyncResult:
         logger.info("Sending bot token")

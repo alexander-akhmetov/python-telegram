@@ -183,7 +183,9 @@ class Telegram:
 
         Returns:
             AsyncResult
-            The update will be:
+
+            The update will be::
+
                 {
                     '@type': 'formattedText',
                     'text': 'Hello world!',
@@ -232,7 +234,9 @@ class Telegram:
 
         Returns:
             AsyncResult
-            The update will be:
+
+            The update will be::
+
                 {
                     '@type': 'message',
                     'id': 1,
@@ -280,7 +284,8 @@ class Telegram:
         Args:
             contacts
 
-        contacts is a list of the form
+        ``contacts`` is a list of the form::
+
             [
                 {
                     "phone_number": "+380 12 345 67 89",
@@ -294,17 +299,20 @@ class Telegram:
                 },
                 ...
             ]
-        phone format is country-specifc
+
+        The phone number format is country-specific.
 
         Returns:
             AsyncResult
-            The update will be:
-            {
-                '@type': 'importedContacts',
-                'user_ids': [1, 2],
-                'importer_count': [3, 4],
-                ...
-            }
+
+            The update will be::
+
+                {
+                    '@type': 'importedContacts',
+                    'user_ids': [1, 2],
+                    'importer_count': [3, 4],
+                    ...
+                }
         """
 
         for contact in contacts:
@@ -355,16 +363,20 @@ class Telegram:
 
     def get_chats(self, offset_order: int = 0, offset_chat_id: int = 0, limit: int = 100) -> AsyncResult:
         """
-        Returns a list of chats:
+        Returns a list of chats.
 
         Returns:
-            {
-                '@type': 'chats',
-                'chat_ids': [...],
-                '@extra': {
-                    'request_id': '...'
+            AsyncResult
+
+            The update will be::
+
+                {
+                    '@type': 'chats',
+                    'chat_ids': [...],
+                    '@extra': {
+                        'request_id': '...'
+                    }
                 }
-            }
         """
         data = {
             "@type": "getChats",
@@ -418,7 +430,9 @@ class Telegram:
 
         Returns:
             AsyncResult
-            The update will be:
+
+            The update will be::
+
                 {
                     '@type': 'message',
                     'id': 1,

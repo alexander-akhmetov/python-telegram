@@ -9,7 +9,7 @@ How to build tdlib
 
 `Official documentation <https://github.com/tdlib/td#building>`_
 
-Do not forget install the library after:
+Do not forget to install the library after you have built it:
 
 .. code-block:: bash
 
@@ -19,7 +19,6 @@ Do not forget install the library after:
 ------------
 
 Also, you can use it with Docker:
-    * tdlib only `tdlib-docker <https://hub.docker.com/r/akhmetov/tdlib/>`_
     * this package + tdlib `python-telegram-docker <https://hub.docker.com/r/akhmetov/python-telegram/>`_
 
 

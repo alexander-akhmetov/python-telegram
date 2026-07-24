@@ -9,6 +9,7 @@ from telegram import VERSION
 from telegram.client import MESSAGE_HANDLER_TYPE, AuthorizationState, Telegram
 from telegram.text import Spoiler
 from telegram.utils import AsyncResult
+from telegram.worker import SimpleWorker
 
 API_ID = 1
 API_HASH = "hash"
@@ -90,7 +91,7 @@ class TestTelegram:
         telegram._tdjson.send.assert_called_once_with(exp_data)
 
     def test_send_phone_number_or_bot_token(self, telegram):
-        # check that the dunction calls _send_phone_number or _send_bot_token
+        # check that the function calls _send_phone_number or _send_bot_token
         with patch.object(telegram, "_send_phone_number"), patch.object(telegram, "_send_bot_token"):
             telegram.phone = "123"
             telegram.bot_token = None
@@ -604,30 +605,33 @@ class TestTelegram__login_non_blocking:
 
 class TestWorkerExceptionHandling:
     def test_worker_thread_survives_handler_exception(self):
-        import time
-        from queue import Queue
-
-        from telegram.worker import SimpleWorker
-
-        q = Queue()
+        q = queue.Queue()
         worker = SimpleWorker(queue=q)
-        worker.run()
 
         results = []
+        good_handler_called = threading.Event()
 
         def bad_handler(update):
             raise RuntimeError("boom")
 
         def good_handler(update):
             results.append(update)
+            good_handler_called.set()
 
-        q.put((bad_handler, {"@type": "test"}))
-        q.put((good_handler, {"@type": "test"}))
+        with patch.object(q, "task_done", wraps=q.task_done) as task_done:
+            worker.run()
 
-        time.sleep(0.5)
-        worker.stop()
+            q.put((bad_handler, {"@type": "test"}))
+            q.put((good_handler, {"@type": "test"}))
+
+            assert good_handler_called.wait(timeout=5), "the worker stopped after the failing handler"
+
+            # `stop` joins the thread, so both updates are fully processed after it returns
+            worker.stop()
 
         assert results == [{"@type": "test"}]
+        # a failing handler must still mark its update as done, otherwise `Queue.join` blocks forever
+        assert task_done.call_count == 2
 
 
 class TestStop:

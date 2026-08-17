@@ -32,6 +32,9 @@ clean:
 build-pypi: clean
 	python3 -m build
 
-.PHONY: release-pypi
-release-pypi:build-pypi
-	twine upload dist/*
+# Publishing to PyPI happens in .github/workflows/release.yml, through trusted
+# publishing, when a version tag is pushed. There is no manual upload target.
+.PHONY: release
+release:
+	@echo "Bump __version__ in telegram/__init__.py, merge it, then push the tag:"
+	@echo "  git tag <version> && git push origin <version>"

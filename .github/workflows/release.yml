@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  push:
+    tags:
+      # Also matches a pre-release such as 1.1.0rc1 or 1.1.0-rc1.
+      - "[0-9]+.[0-9]+.[0-9]+*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write # create the release and upload the artifacts
+      id-token: write # OIDC token for the provenance attestation
+      attestations: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+
+      # A tag can point at any commit, so do not assume the test workflow
+      # already passed here. One Python version, not the full tox matrix.
+      - name: Test
+        run: |
+          python -m pip install --upgrade pip
+          pip install . -r tests/requirements.txt
+          pytest -v
+
+      - name: Build
+        run: |
+          pip install build packaging
+          python -m build
+
+      # The version is a literal in telegram/__init__.py, so a tag can point at
+      # a commit that still carries the previous version. Catch that before the
+      # upload, which cannot be undone.
+      #
+      # The comparison is on the parsed version, not the string: PEP 440
+      # normalizes a 1.1.0-rc1 tag to 1.1.0rc1 in the filename.
+      - name: Check built version matches the tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          wheel="$(ls dist/*.whl)"
+          built="$(basename "${wheel}" | cut -d- -f2)"
+          echo "tag=${TAG} built=${built}"
+          python - "${TAG}" "${built}" <<'PY'
+          import sys
+
+          from packaging.version import Version
+
+          tag, built = sys.argv[1], sys.argv[2]
+          if Version(tag) != Version(built):
+              print(f"::error::built version {built} does not match tag {tag}")
+              sys.exit(1)
+          PY
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: "dist/*"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" dist/* --generate-notes --verify-tag
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  # Separate job so the OIDC token is scoped to the pypi environment the
+  # trusted publisher is bound to, and so a failed upload can be re-run on its
+  # own instead of re-running `gh release create` against an existing release.
+  #
+  # Last, because it is the only irreversible step. A PyPI version can never be
+  # uploaded twice; a GitHub release can be deleted and recreated.
+  publish-pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: pypi
+      url: https://pypi.org/p/python-telegram
+    permissions:
+      id-token: write # OIDC token for PyPI trusted publishing
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+          path: dist/
+
+      # Trusted publishing: no API token, the action mints one from the OIDC
+      # token. Configured at https://pypi.org/manage/account/publishing/.
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2

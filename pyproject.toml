@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
 
 [project]
 name = "python-telegram"
@@ -34,20 +34,24 @@ Documentation = "https://python-telegram.readthedocs.io/latest/"
 Tutorial = "https://python-telegram.readthedocs.io/latest/tutorial.html"
 Changelog = "https://python-telegram.readthedocs.io/latest/changelog.html"
 
-[tool.setuptools]
+# Single source of truth for the version. The docs import telegram from the
+# source tree without installing it, so the version has to be readable there.
+[tool.hatch.version]
+path = "telegram/__init__.py"
+
+# Everything under telegram/ that git tracks, which covers the precompiled
+# libtdjson binaries in lib/ and py.typed.
+[tool.hatch.build.targets.wheel]
 packages = ["telegram"]
-include-package-data = true
-zip-safe = false
 
-[tool.setuptools.package-data]
-telegram = [
-    "lib/darwin/*",
-    "lib/linux/*",
-    "py.typed",
+[tool.hatch.build.targets.sdist]
+include = [
+    "telegram",
+    "docs",
+    "README.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
 ]
-
-[tool.setuptools_scm]
-write_to = "telegram/_version.py"
 
 [tool.ruff]
 line-length = 119

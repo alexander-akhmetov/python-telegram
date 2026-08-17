@@ -33,6 +33,10 @@ make docker/build
 make build-pypi
 ```
 
+## Releasing
+
+Build backend is hatchling; the version is a literal in `telegram/__init__.py`, read by `[tool.hatch.version]`. Pushing a version tag runs `.github/workflows/release.yml`, which tests, builds, creates the GitHub release, and publishes to PyPI with trusted publishing (OIDC, no API token). There is no manual upload path.
+
 ## Architecture
 
 **TDJson** (`telegram/tdjson.py`) — ctypes binding to `libtdjson`. Handles library discovery (system path → bundled precompiled in `telegram/lib/{darwin,linux}/`), creation/destruction of TDLib client instances, and JSON send/receive/execute.

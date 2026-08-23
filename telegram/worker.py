@@ -4,6 +4,10 @@ from queue import Empty, Queue
 
 logger = logging.getLogger(__name__)
 
+# a handler that never returns must not hold up the shutdown, and at interpreter
+# exit it would hold up the interpreter itself
+JOIN_TIMEOUT: float = 5.0
+
 
 class BaseWorker:
     """
@@ -27,9 +31,12 @@ class SimpleWorker(BaseWorker):
     """Simple one-thread worker"""
 
     def run(self) -> None:
-        self._thread = threading.Thread(target=self._run_thread)
-        self._thread.daemon = True
-        self._thread.start()
+        thread = threading.Thread(target=self._run_thread)
+        thread.daemon = True
+        thread.start()
+
+        # a thread that failed to start must stay invisible to `stop`: joining it raises
+        self._thread = thread
 
     def _run_thread(self) -> None:
         logger.info("[SimpleWorker] started")
@@ -49,8 +56,16 @@ class SimpleWorker(BaseWorker):
     def stop(self) -> None:
         self._is_enabled = False
 
-        if threading.current_thread() is self._thread:
+        # `_thread` only exists after `run`
+        thread = getattr(self, "_thread", None)
+        if thread is None:
+            return
+
+        if threading.current_thread() is thread:
             # a handler calling stop() runs on this thread, and joining it raises
             return
 
-        self._thread.join()
+        thread.join(timeout=JOIN_TIMEOUT)
+
+        if thread.is_alive():
+            logger.warning("[SimpleWorker] an update handler is still running after %s seconds", JOIN_TIMEOUT)

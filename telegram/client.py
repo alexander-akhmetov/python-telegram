@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import base64
 import enum
 import getpass
@@ -14,7 +15,7 @@ import typing
 from collections import defaultdict
 from collections.abc import Callable
 from pathlib import Path
-from types import FrameType
+from types import FrameType, TracebackType
 from typing import (
     Any,
     Literal,
@@ -36,6 +37,10 @@ ANY_UPDATE_HANDLER_TYPE: str = "*"
 
 # how long `stop` waits for tdlib to report the CLOSED authorization state
 DEFAULT_CLOSE_TIMEOUT: float = 5.0
+
+# the atexit fallback is not the intended shutdown path, so it waits less than
+# `stop` does: a script that already finished should not hang on the way out
+ATEXIT_CLOSE_TIMEOUT: float = 2.0
 
 
 class AuthorizationState(enum.Enum):
@@ -161,10 +166,40 @@ class Telegram:
         self._update_handlers: defaultdict[str, list[Callable]] = defaultdict(list)
 
         self._tdjson = TDJson(library_path=library_path, verbosity=tdlib_verbosity)
-        self._run()
 
-        if login:
-            self.login()
+        try:
+            self._run()
+
+            if login:
+                self.login()
+        except BaseException:
+            # nothing escapes a failing constructor, so the caller gets no object
+            # to stop the threads with
+            self.stop()
+            raise
+
+    def __enter__(self) -> Telegram:  # noqa: PYI034 - `Self` needs typing 3.11, this package supports 3.10
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self.stop()
+
+    def _atexit_stop(self) -> None:
+        # `stop` unregisters this hook, but unregistering from inside a running
+        # atexit callback does not take effect, so the guard stays here too
+        if self._stopped.is_set():
+            return
+
+        logger.warning(
+            "The telegram client was not stopped. Closing it now; call stop() or use "
+            "the client as a context manager to close it when you are done."
+        )
+        self.stop(close_timeout=ATEXIT_CLOSE_TIMEOUT)
 
     def stop(self, close_timeout: float = DEFAULT_CLOSE_TIMEOUT) -> None:
         """
@@ -189,6 +224,7 @@ class Telegram:
             logger.exception("Could not close the tdlib session cleanly, stopping anyway")
 
         self._stopped.set()
+        atexit.unregister(self._atexit_stop)
 
         try:
             self.worker.stop()
@@ -199,8 +235,14 @@ class Telegram:
 
         try:
             # wait for the tdjson listener to stop
-            self._td_listener.join()
+            td_listener = getattr(self, "_td_listener", None)
+            if td_listener is not None:
+                td_listener.join()
+        except Exception:
+            # the tdlib client has to be destroyed even if the listener cannot be joined
+            logger.exception("Could not join the tdlib listener thread, stopping anyway")
 
+        try:
             if hasattr(self, "_tdjson"):
                 self._tdjson.stop()
         finally:
@@ -650,11 +692,16 @@ class Telegram:
         return self._send_data(data, block=block)
 
     def _run(self) -> None:
-        self._td_listener = threading.Thread(target=self._listen_to_td)
-        self._td_listener.daemon = True
-        self._td_listener.start()
+        td_listener = threading.Thread(target=self._listen_to_td)
+        td_listener.daemon = True
+        td_listener.start()
+
+        # a thread that failed to start must stay invisible to `stop`: joining it raises
+        self._td_listener = td_listener
 
         self.worker.run()
+
+        atexit.register(self._atexit_stop)
 
     def _listen_to_td(self) -> None:
         logger.info("[Telegram.td_listener] started")

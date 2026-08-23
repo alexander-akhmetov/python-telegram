@@ -1,3 +1,4 @@
+import logging
 import queue
 import threading
 import time
@@ -6,7 +7,13 @@ from unittest.mock import call, patch
 import pytest
 
 from telegram import VERSION
-from telegram.client import ANY_UPDATE_HANDLER_TYPE, MESSAGE_HANDLER_TYPE, AuthorizationState, Telegram
+from telegram.client import (
+    ANY_UPDATE_HANDLER_TYPE,
+    ATEXIT_CLOSE_TIMEOUT,
+    MESSAGE_HANDLER_TYPE,
+    AuthorizationState,
+    Telegram,
+)
 from telegram.text import Spoiler
 from telegram.utils import AsyncResult
 from telegram.worker import SimpleWorker
@@ -20,7 +27,7 @@ DATABASE_ENCRYPTION_KEY = "changeme1234"
 
 @pytest.fixture
 def telegram():
-    with patch("telegram.client.TDJson"), patch("telegram.client.threading"):
+    with patch("telegram.client.TDJson"), patch("telegram.client.threading"), patch("telegram.client.atexit"):
         return _get_telegram_instance()
 
 
@@ -31,7 +38,7 @@ def _get_telegram_instance(**kwargs):
     kwargs.setdefault("library_path", LIBRARY_PATH)
     kwargs.setdefault("database_encryption_key", DATABASE_ENCRYPTION_KEY)
 
-    with patch("telegram.client.TDJson"), patch("telegram.client.threading"):
+    with patch("telegram.client.TDJson"), patch("telegram.client.threading"), patch("telegram.client.atexit"):
         tg = Telegram(**kwargs)
 
     return tg
@@ -47,6 +54,16 @@ class TestTelegram:
                 database_encryption_key=DATABASE_ENCRYPTION_KEY,
             )
             assert "You must provide bot_token or phone" in str(excinfo.value)
+
+    def test_a_failing_login_stops_the_client(self):
+        with (
+            patch.object(Telegram, "login", side_effect=RuntimeError("boom")),
+            patch.object(Telegram, "stop") as stop,
+            pytest.raises(RuntimeError, match="boom"),
+        ):
+            _get_telegram_instance(login=True)
+
+        stop.assert_called_once()
 
     def test_send_message(self, telegram):
         chat_id = 1
@@ -547,6 +564,41 @@ class TestTelegram:
         telegram._tdjson.send.assert_called_once_with(exp_data)
 
 
+class TestContextManager:
+    # the `telegram` fixture patches `threading`, so `_stopped` has to be a real
+    # event here, and CLOSED keeps `stop` from waiting out its close timeout
+    def _prepare(self, telegram):
+        telegram._stopped = threading.Event()
+        telegram.authorization_state = AuthorizationState.CLOSED
+
+    def test_stop_is_called_on_a_clean_exit(self, telegram):
+        self._prepare(telegram)
+
+        with patch.object(telegram, "stop", wraps=telegram.stop) as stop, telegram as entered:
+            assert entered is telegram
+
+        stop.assert_called_once()
+        assert telegram._stopped.is_set()
+
+    def test_stop_is_called_when_the_body_raises(self, telegram):
+        self._prepare(telegram)
+
+        with (
+            patch.object(telegram, "stop", wraps=telegram.stop) as stop,
+            pytest.raises(RuntimeError, match="boom"),
+            telegram,
+        ):
+            raise RuntimeError("boom")
+
+        stop.assert_called_once()
+        assert telegram._stopped.is_set()
+
+    def test_enter_does_not_log_in(self, telegram):
+        assert telegram.__enter__() is telegram
+
+        telegram._tdjson.send.assert_not_called()
+
+
 class TestAuthorizationState:
     @pytest.mark.parametrize(
         "state",
@@ -893,6 +945,49 @@ class TestWorkerExceptionHandling:
         worker._thread.join(timeout=5)
         assert not worker._thread.is_alive()
 
+    def test_stop_on_a_worker_that_never_ran(self):
+        worker = SimpleWorker(queue=queue.Queue())
+
+        worker.stop()
+
+        assert worker._is_enabled is False
+
+    def test_stop_gives_up_on_a_handler_that_does_not_return(self, caplog):
+        q = queue.Queue()
+        worker = SimpleWorker(queue=q)
+
+        handler_started = threading.Event()
+        release = threading.Event()
+
+        def handler(update):
+            handler_started.set()
+            release.wait(timeout=5)
+
+        worker.run()
+        q.put((handler, {"@type": "test"}))
+
+        assert handler_started.wait(timeout=5), "the handler never ran"
+
+        try:
+            with patch("telegram.worker.JOIN_TIMEOUT", 0.1), caplog.at_level(logging.WARNING):
+                worker.stop()
+        finally:
+            release.set()
+
+        assert "still running" in caplog.text
+
+    def test_stop_on_a_worker_whose_thread_could_not_start(self):
+        worker = SimpleWorker(queue=queue.Queue())
+
+        with patch("telegram.worker.threading.Thread") as thread:
+            thread.return_value.start.side_effect = RuntimeError("can't start new thread")
+            thread.return_value.join.side_effect = RuntimeError("cannot join thread before it is started")
+
+            with pytest.raises(RuntimeError, match="can't start new thread"):
+                worker.run()
+
+        worker.stop()
+
 
 class TestStop:
     # the `telegram` fixture patches `threading`, so `_stopped` and
@@ -970,6 +1065,36 @@ class TestStop:
         assert telegram._shutdown_complete.is_set()
         telegram._tdjson.stop.assert_called_once()
 
+    def test_stop_finishes_when_the_listener_cannot_be_joined(self, telegram):
+        self._prepare(telegram)
+        telegram._td_listener.join.side_effect = RuntimeError("cannot join thread before it is started")
+
+        telegram.stop(close_timeout=0)
+
+        assert telegram._shutdown_complete.is_set()
+        telegram._tdjson.stop.assert_called_once()
+
+    def test_the_client_is_destroyed_when_the_listener_could_not_start(self):
+        with (
+            patch("telegram.client.TDJson") as tdjson,
+            patch("telegram.client.threading.Thread") as thread,
+            patch("telegram.client.atexit"),
+            patch.object(Telegram, "_close"),
+        ):
+            thread.return_value.start.side_effect = RuntimeError("can't start new thread")
+            thread.return_value.join.side_effect = RuntimeError("cannot join thread before it is started")
+
+            with pytest.raises(RuntimeError, match="can't start new thread"):
+                Telegram(
+                    api_id=API_ID,
+                    api_hash=API_HASH,
+                    phone=PHONE,
+                    library_path=LIBRARY_PATH,
+                    database_encryption_key=DATABASE_ENCRYPTION_KEY,
+                )
+
+            tdjson.return_value.stop.assert_called_once()
+
     def test_stop_finishes_when_the_worker_raises(self, telegram):
         self._prepare(telegram)
 
@@ -1013,6 +1138,58 @@ class TestStop:
             threading.Thread(target=call_idle, daemon=True).start()
 
             assert returned.wait(timeout=5), "idle did not return after the shutdown was complete"
+
+    def test_run_registers_the_atexit_hook(self):
+        with (
+            patch("telegram.client.TDJson"),
+            patch("telegram.client.threading"),
+            patch("telegram.client.atexit") as mocked_atexit,
+        ):
+            tg = Telegram(
+                api_id=API_ID,
+                api_hash=API_HASH,
+                phone=PHONE,
+                library_path=LIBRARY_PATH,
+                database_encryption_key=DATABASE_ENCRYPTION_KEY,
+            )
+
+            mocked_atexit.register.assert_called_once_with(tg._atexit_stop)
+
+    def test_stop_unregisters_the_atexit_hook(self, telegram):
+        self._prepare(telegram)
+
+        with patch("telegram.client.atexit") as mocked_atexit:
+            telegram.stop(close_timeout=0.2)
+
+        mocked_atexit.unregister.assert_called_once_with(telegram._atexit_stop)
+
+    def test_atexit_stop_stops_a_running_client(self, telegram, caplog):
+        self._prepare(telegram)
+
+        with patch.object(telegram, "stop") as stop, caplog.at_level(logging.WARNING):
+            telegram._atexit_stop()
+
+        stop.assert_called_once_with(close_timeout=ATEXIT_CLOSE_TIMEOUT)
+        assert "was not stopped" in caplog.text
+
+    def test_atexit_stop_does_nothing_on_a_stopped_client(self, telegram, caplog):
+        self._prepare(telegram)
+        telegram._stopped.set()
+
+        with patch.object(telegram, "stop") as stop, caplog.at_level(logging.WARNING):
+            telegram._atexit_stop()
+
+        stop.assert_not_called()
+        assert caplog.text == ""
+
+    def test_stop_works_without_a_listener_thread(self, telegram):
+        self._prepare(telegram)
+        del telegram._td_listener
+
+        telegram.stop(close_timeout=0.2)
+
+        assert telegram._stopped.is_set()
+        telegram._tdjson.stop.assert_called_once()
 
     def test_close_stops_waiting_after_the_timeout(self, telegram):
         self._prepare(telegram)

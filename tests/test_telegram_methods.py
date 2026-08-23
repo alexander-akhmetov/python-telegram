@@ -727,13 +727,38 @@ class TestWorkerExceptionHandling:
         # a failing handler must still mark its update as done, otherwise `Queue.join` blocks forever
         assert task_done.call_count == 2
 
+    def test_handler_can_stop_the_worker(self):
+        q = queue.Queue()
+        worker = SimpleWorker(queue=q)
+
+        errors = []
+        handler_returned = threading.Event()
+
+        def handler(update):
+            try:
+                worker.stop()
+            except Exception as e:  # noqa: BLE001
+                errors.append(e)
+            handler_returned.set()
+
+        worker.run()
+        q.put((handler, {"@type": "test"}))
+
+        assert handler_returned.wait(timeout=5), "the handler never ran"
+        assert errors == []
+
+        worker._thread.join(timeout=5)
+        assert not worker._thread.is_alive()
+
 
 class TestStop:
-    # the `telegram` fixture patches `threading`, so `_stopped` has to be a real
-    # event for these tests, and `_td_listener` stays a mock
+    # the `telegram` fixture patches `threading`, so `_stopped` and
+    # `_shutdown_complete` have to be real events for these tests, and
+    # `_td_listener` stays a mock
 
     def _prepare(self, telegram):
         telegram._stopped = threading.Event()
+        telegram._shutdown_complete = threading.Event()
         telegram.authorization_state = AuthorizationState.READY
 
     def test_stop_is_idempotent(self, telegram):
@@ -780,6 +805,71 @@ class TestStop:
 
         assert telegram._stopped.is_set()
         telegram._tdjson.stop.assert_called_once()
+
+    def test_stop_can_be_called_from_an_update_handler(self, telegram):
+        self._prepare(telegram)
+
+        errors = []
+        handler_returned = threading.Event()
+
+        def handler(update):
+            try:
+                telegram.stop(close_timeout=0)
+            except Exception as e:  # noqa: BLE001
+                errors.append(e)
+            handler_returned.set()
+
+        telegram._workers_queue.put((handler, {"@type": "test"}))
+
+        assert handler_returned.wait(timeout=5), "the handler never ran"
+        assert errors == []
+        assert telegram._stopped.is_set()
+        assert telegram._shutdown_complete.is_set()
+        telegram._tdjson.stop.assert_called_once()
+
+    def test_stop_finishes_when_the_worker_raises(self, telegram):
+        self._prepare(telegram)
+
+        with patch.object(telegram.worker, "stop", side_effect=RuntimeError("boom")):
+            telegram.stop(close_timeout=0)
+
+        assert telegram._shutdown_complete.is_set()
+        telegram._tdjson.stop.assert_called_once()
+
+    def test_shutdown_is_complete_only_after_the_client_is_destroyed(self, telegram):
+        self._prepare(telegram)
+
+        set_before_tdjson_stop = []
+        telegram._tdjson.stop.side_effect = lambda: set_before_tdjson_stop.append(telegram._shutdown_complete.is_set())
+
+        telegram.stop(close_timeout=0)
+
+        assert set_before_tdjson_stop == [False]
+        assert telegram._shutdown_complete.is_set()
+
+    def test_shutdown_is_complete_when_the_teardown_raises(self, telegram):
+        self._prepare(telegram)
+        telegram._tdjson.stop.side_effect = RuntimeError("boom")
+
+        with pytest.raises(RuntimeError):
+            telegram.stop(close_timeout=0)
+
+        assert telegram._shutdown_complete.is_set()
+
+    def test_idle_returns_when_the_shutdown_is_complete(self, telegram):
+        self._prepare(telegram)
+        telegram._shutdown_complete.set()
+
+        returned = threading.Event()
+
+        def call_idle():
+            telegram.idle()
+            returned.set()
+
+        with patch("telegram.client.signal.signal"):
+            threading.Thread(target=call_idle, daemon=True).start()
+
+            assert returned.wait(timeout=5), "idle did not return after the shutdown was complete"
 
     def test_close_stops_waiting_after_the_timeout(self, telegram):
         self._prepare(telegram)

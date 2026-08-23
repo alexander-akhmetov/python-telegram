@@ -2,6 +2,12 @@
 Changelog
 =========
 
+[Unreleased]
+------------
+
+- ``stop`` can now be called from an update handler. It used to raise ``RuntimeError: cannot join current thread`` and leave the tdlib client alive, because the worker joined the thread the handler runs on.
+- ``idle`` now returns only after the tdlib client is destroyed. It used to return as soon as ``stop`` marked the client stopped, which happens before the listener thread is joined, so a script that exited right after ``idle`` could kill the daemon threads part way through the shutdown.
+
 [2.0.0] - 2026-08-23
 --------------------
 

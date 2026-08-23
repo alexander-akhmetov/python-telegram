@@ -1,6 +1,8 @@
+import os
 import queue
 import threading
 import time
+from pathlib import Path
 from unittest.mock import call, patch
 
 import pytest
@@ -221,6 +223,48 @@ class TestTelegram:
                 call((my_any_handler, update), timeout=10),
             ]
 
+    def test_run_handlers_does_not_register_the_update_type(self, telegram):
+        telegram._run_handlers({"@type": "neverRegistered"})
+
+        assert "neverRegistered" not in telegram._update_handlers
+
+    def test_remove_update_handler_does_not_register_the_update_type(self, telegram):
+        def my_handler():
+            pass
+
+        telegram.remove_update_handler("neverRegistered", my_handler)
+
+        assert "neverRegistered" not in telegram._update_handlers
+
+    def test_run_handlers_dispatches_to_a_snapshot(self, telegram):
+        # the fixture patches `telegram.client.threading`, so the instance holds
+        # a MagicMock that does not lock
+        telegram._handlers_lock = threading.Lock()
+        update = {"@type": MESSAGE_HANDLER_TYPE}
+
+        def my_handler():
+            pass
+
+        def late_handler():
+            pass
+
+        telegram.add_message_handler(my_handler)
+
+        # register the second handler while the first one is being dispatched
+        with patch.object(telegram._workers_queue, "put") as mocked_put:
+            mocked_put.side_effect = lambda *a, **kw: telegram.add_message_handler(late_handler)
+            telegram._run_handlers(update)
+
+            assert mocked_put.call_args_list == [call((my_handler, update), timeout=10)]
+
+        with patch.object(telegram._workers_queue, "put") as mocked_put:
+            telegram._run_handlers(update)
+
+            assert mocked_put.call_args_list == [
+                call((my_handler, update), timeout=10),
+                call((late_handler, update), timeout=10),
+            ]
+
     def test_remove_update_handler_any_update_type(self, telegram):
         def my_handler():
             pass
@@ -375,11 +419,13 @@ class TestTelegram:
 
         telegram._tdjson.send.assert_called_once_with(exp_data)
 
-    @patch("telegram.client.tempfile.gettempdir", return_value="/tmp")
-    def test_set_initial_params(self, _mocked_gettempdir):
-        telegram = _get_telegram_instance(database_encryption_key="key")
+    def test_set_initial_params(self, tmp_path):
+        with patch("telegram.client.tempfile.gettempdir", return_value=str(tmp_path)):
+            telegram = _get_telegram_instance(database_encryption_key="key")
+
         async_result = telegram._set_initial_params()
         phone_md5 = "69560384b84c896952ef20352fbce705"
+        expected_directory = tmp_path / ".tdlib_files" / phone_md5
 
         parameters = {
             "use_test_dc": False,
@@ -389,9 +435,9 @@ class TestTelegram:
             "system_version": "unknown",
             "application_version": VERSION,
             "system_language_code": "en",
-            "database_directory": f"/tmp/.tdlib_files/{phone_md5}/database",
+            "database_directory": str(expected_directory / "database"),
             "use_message_database": True,
-            "files_directory": f"/tmp/.tdlib_files/{phone_md5}/files",
+            "files_directory": str(expected_directory / "files"),
             "use_secret_chats": True,
         }
         exp_data = {
@@ -524,6 +570,65 @@ class TestTelegram__send_data:
         second = telegram._send_data({"@type": "checkAuthenticationPassword"}, result_id="updateAuthorizationState")
 
         assert telegram._results["updateAuthorizationState"] is second
+
+    def test_forgets_the_result_when_the_caller_stops_waiting(self, telegram):
+        async_result = telegram._send_data({"@type": "getMe"})
+
+        with pytest.raises(TimeoutError):
+            async_result.wait(timeout=0.01)
+
+        assert async_result.id not in telegram._results
+
+    def test_reuses_the_id_after_the_previous_request_timed_out(self, telegram):
+        first = telegram._send_data({"@type": "checkAuthenticationCode"}, result_id="updateAuthorizationState")
+
+        with pytest.raises(TimeoutError):
+            first.wait(timeout=0.01)
+
+        second = telegram._send_data({"@type": "checkAuthenticationPassword"}, result_id="updateAuthorizationState")
+
+        assert telegram._results["updateAuthorizationState"] is second
+
+    def test_a_late_response_to_a_forgotten_request_is_ignored(self, telegram):
+        async_result = telegram._send_data({"@type": "getMe"})
+        telegram._forget_result(async_result.id)
+
+        update = {"@type": "user", "@extra": {"request_id": async_result.id}}
+
+        assert telegram._update_async_result(update) is None
+
+    def test_forgetting_a_result_does_not_drop_the_next_one_under_the_same_id(self, telegram):
+        first = telegram._send_data({"@type": "checkAuthenticationCode"}, result_id="updateAuthorizationState")
+
+        with pytest.raises(TimeoutError):
+            first.wait(timeout=0.01)
+
+        second = telegram._send_data({"@type": "checkAuthenticationPassword"}, result_id="updateAuthorizationState")
+        telegram._forget_result(first.id, first)
+
+        assert telegram._results["updateAuthorizationState"] is second
+
+    def test_forgets_the_result_when_the_send_fails(self, telegram):
+        telegram._tdjson.send.side_effect = RuntimeError("boom")
+
+        with pytest.raises(RuntimeError, match="boom"):
+            telegram._send_data({"@type": "checkAuthenticationCode"}, result_id="updateAuthorizationState")
+
+        assert telegram._results == {}
+
+        telegram._tdjson.send.side_effect = None
+        second = telegram._send_data({"@type": "checkAuthenticationPassword"}, result_id="updateAuthorizationState")
+
+        assert telegram._results["updateAuthorizationState"] is second
+
+    def test_a_rejected_request_leaves_the_payload_untouched(self, telegram):
+        telegram._send_data({"@type": "checkAuthenticationCode"}, result_id="updateAuthorizationState")
+        data = {"@type": "checkAuthenticationPassword"}
+
+        with pytest.raises(RuntimeError, match="already in flight"):
+            telegram._send_data(data, result_id="updateAuthorizationState")
+
+        assert data == {"@type": "checkAuthenticationPassword"}
 
     def test_add_proxy_can_be_sent_repeatedly(self, telegram):
         telegram.proxy_server = "example.com"
@@ -881,6 +986,14 @@ class TestStop:
         assert telegram._shutdown_complete.is_set()
         telegram._tdjson.stop.assert_called_once()
 
+    def test_stop_forgets_the_requests_still_in_flight(self, telegram):
+        self._prepare(telegram)
+        telegram._send_data({"@type": "getMe"})
+
+        telegram.stop(close_timeout=0)
+
+        assert telegram._results == {}
+
     def test_shutdown_is_complete_only_after_the_client_is_destroyed(self, telegram):
         self._prepare(telegram)
 
@@ -894,12 +1007,14 @@ class TestStop:
 
     def test_shutdown_is_complete_when_the_teardown_raises(self, telegram):
         self._prepare(telegram)
+        telegram._send_data({"@type": "getMe"})
         telegram._tdjson.stop.side_effect = RuntimeError("boom")
 
         with pytest.raises(RuntimeError):
             telegram.stop(close_timeout=0)
 
         assert telegram._shutdown_complete.is_set()
+        assert telegram._results == {}
 
     def test_idle_returns_when_the_shutdown_is_complete(self, telegram):
         self._prepare(telegram)
@@ -1023,3 +1138,84 @@ class TestSendMessageElementError:
         patched_parse = patch.object(telegram, "parse_text_entities", return_value=result)
         with patched_parse, pytest.raises(RuntimeError, match="Failed to parse text entities"):
             telegram.send_message(chat_id=1, text=Spoiler("test"))
+
+
+class TestFilesDirectory:
+    def _default_directory(self, tmp_path):
+        return tmp_path / ".tdlib_files" / "69560384b84c896952ef20352fbce705"
+
+    def test_the_default_directory_is_created_private(self, tmp_path):
+        with patch("telegram.client.tempfile.gettempdir", return_value=str(tmp_path)):
+            telegram = _get_telegram_instance()
+
+        assert telegram.files_directory == self._default_directory(tmp_path)
+        assert telegram.files_directory.is_dir()
+        assert telegram.files_directory.stat().st_mode & 0o777 == 0o700
+
+    def test_an_existing_default_directory_is_tightened(self, tmp_path):
+        directory = self._default_directory(tmp_path)
+        directory.mkdir(parents=True)
+        directory.chmod(0o755)
+
+        with patch("telegram.client.tempfile.gettempdir", return_value=str(tmp_path)):
+            telegram = _get_telegram_instance()
+
+        assert telegram.files_directory.stat().st_mode & 0o777 == 0o700
+
+    def test_a_directory_passed_by_the_caller_is_not_touched(self, tmp_path):
+        directory = tmp_path / "my-files"
+        directory.mkdir()
+        directory.chmod(0o755)
+
+        _get_telegram_instance(files_directory=directory)
+
+        assert directory.stat().st_mode & 0o777 == 0o755
+
+    def test_a_symlink_at_the_default_path_is_not_followed(self, tmp_path, caplog):
+        target = tmp_path / "target"
+        target.mkdir()
+        target.chmod(0o755)
+
+        directory = self._default_directory(tmp_path)
+        directory.parent.mkdir(parents=True)
+        directory.symlink_to(target)
+
+        with patch("telegram.client.tempfile.gettempdir", return_value=str(tmp_path)):
+            _get_telegram_instance()
+
+        assert target.stat().st_mode & 0o777 == 0o755
+        assert "leaving its permissions alone" in caplog.text
+
+    def test_a_directory_owned_by_another_user_is_left_alone(self, tmp_path, caplog):
+        directory = self._default_directory(tmp_path)
+        directory.mkdir(parents=True)
+        directory.chmod(0o755)
+
+        with (
+            patch("telegram.client.tempfile.gettempdir", return_value=str(tmp_path)),
+            patch("telegram.client.os.getuid", return_value=os.getuid() + 1),
+        ):
+            _get_telegram_instance()
+
+        assert directory.stat().st_mode & 0o777 == 0o755
+        assert "leaving its permissions alone" in caplog.text
+
+    def test_construction_survives_a_directory_that_cannot_be_created(self, tmp_path, caplog):
+        with (
+            patch("telegram.client.tempfile.gettempdir", return_value=str(tmp_path)),
+            patch.object(Path, "mkdir", side_effect=OSError("read-only")),
+        ):
+            telegram = _get_telegram_instance()
+
+        assert telegram.files_directory == self._default_directory(tmp_path)
+        assert "Could not restrict" in caplog.text
+
+    def test_construction_survives_a_directory_that_cannot_be_tightened(self, tmp_path, caplog):
+        with (
+            patch("telegram.client.tempfile.gettempdir", return_value=str(tmp_path)),
+            patch.object(Path, "chmod", side_effect=OSError("not permitted")),
+        ):
+            telegram = _get_telegram_instance()
+
+        assert telegram.files_directory.is_dir()
+        assert "Could not restrict" in caplog.text

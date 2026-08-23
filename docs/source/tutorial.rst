@@ -31,10 +31,13 @@ Initialize a new Telegram client with your credentials:
     )
 
 .. note::
-    By default, the library tells ``tdlib`` to store the message database and the downloaded files in a temporary directory,
-    ``/tmp/.tdlib_files/<md5 of your phone number or bot token>/``.
-    Pass the ``files_directory`` parameter to store them somewhere else.
-    Use it if you want to keep the database between runs, because most systems clean up ``/tmp``.
+    By default, the library tells ``tdlib`` to store the session database and the downloaded files in a temporary directory,
+    ``<system temporary directory>/.tdlib_files/<md5 of your phone number or bot token>/``.
+    The system temporary directory is what ``tempfile.gettempdir()`` returns: ``/tmp`` on most Linux systems, a per-user directory on macOS.
+    The session database is enough to use your account, so the library creates this directory readable only by you.
+    Where it cannot do that, because the path already exists and belongs to another user or is a symlink, it logs a warning and leaves the permissions alone.
+    Pass the ``files_directory`` parameter to store the files somewhere else. A directory you pass in is used as it is, with its own permissions.
+    Use it if you want to keep the database between runs, because most systems clean up their temporary directory.
 
 .. note::
     To sign in as a bot, pass ``bot_token`` instead of ``phone``.

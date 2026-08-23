@@ -32,16 +32,27 @@ class AsyncResult:
         self.error_info: dict[Any, Any] | None = None
         self.update: dict[Any, Any] | None = None
         self._ready = threading.Event()
+        self._abandoned = False
 
     def __str__(self) -> str:
         return f"AsyncResult <{self.id}>"
 
     def wait(self, timeout: float | None = None, raise_exc: bool = False) -> None:
         """
-        Blocking method to wait for the result
+        Blocking method to wait for the result.
+
+        A `wait` that times out gives the request up for good: the client stops
+        routing responses to this object, so a later `wait` on it raises
+        `RuntimeError` instead of blocking for a response that can no longer arrive.
         """
+        if self._abandoned and not self._ready.is_set():
+            raise RuntimeError(f"{self} was given up after a timeout and cannot receive a response any more")
+
         result = self._ready.wait(timeout=timeout)
         if result is False:
+            # the caller has given up, so nothing can reach this result any more
+            self._abandoned = True
+            self.client._forget_result(self.id, self)
             raise TimeoutError()
         if raise_exc and self.error:
             raise RuntimeError(f"Telegram error: {self.error_info}")

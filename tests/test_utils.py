@@ -83,10 +83,33 @@ class TestAsyncResult:
         assert async_result._ready.is_set() is True
 
     def test_wait_with_timeout(self):
-        async_result = AsyncResult(client=None)
+        client = Mock()
+        async_result = AsyncResult(client=client)
 
         with pytest.raises(TimeoutError):
             async_result.wait(timeout=0.01)
+
+        client._forget_result.assert_called_once_with(async_result.id, async_result)
+
+    def test_wait_after_a_timeout_raises_instead_of_blocking(self):
+        async_result = AsyncResult(client=Mock())
+
+        with pytest.raises(TimeoutError):
+            async_result.wait(timeout=0.01)
+
+        with pytest.raises(RuntimeError, match="given up after a timeout"):
+            async_result.wait(timeout=0.01)
+
+    def test_wait_returns_a_result_that_arrived_while_it_was_being_given_up(self):
+        # the listener can be inside `parse_update` when the caller times out
+        async_result = AsyncResult(client=Mock())
+
+        with pytest.raises(TimeoutError):
+            async_result.wait(timeout=0.01)
+
+        async_result.parse_update({"@type": "user"})
+
+        async_result.wait(timeout=0.01)
 
     def test_wait_with_update(self):
         async_result = AsyncResult(client=None)

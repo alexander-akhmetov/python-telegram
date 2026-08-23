@@ -92,7 +92,8 @@ tg = Telegram(
     api_hash="api_hash",
     phone="+31611111111",  # you can pass 'bot_token' instead
     database_encryption_key="changekey123",
-    files_directory="/tmp/.tdlib_files/",
+    # `files_directory` is optional. Without it the library keeps the session
+    # database in a private directory inside the system temporary directory.
 )
 tg.login()
 

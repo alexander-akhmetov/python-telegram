@@ -5,8 +5,10 @@ import enum
 import getpass
 import hashlib
 import logging
+import os
 import queue
 import signal
+import stat
 import tempfile
 import threading
 import time
@@ -101,7 +103,12 @@ class Telegram:
             phone - your phone number
             library_path - you can change path to the compiled libtdjson library
             worker - worker to process updates
-            files_directory - directory for the tdlib's files (database, images, etc.)
+            files_directory - directory for the tdlib's files (database, images, etc.).
+                Defaults to a directory named after the md5 of your phone number or
+                bot token, inside ".tdlib_files" in the system temporary directory.
+                That default holds the session database, so the library creates it
+                readable only by you where the filesystem allows that, and logs a
+                warning where it does not. A directory you pass in is used as it is.
             use_test_dc - use test datacenter
             use_message_database
             use_secret_chats
@@ -137,14 +144,16 @@ class Telegram:
 
         self._database_encryption_key = base64.b64encode(self._database_encryption_key).decode()
 
-        if not files_directory:
+        if files_directory:
+            self.files_directory = Path(files_directory)
+        else:
             hasher = hashlib.md5()
             str_to_encode: str = self.phone or self.bot_token  # type: ignore
             hasher.update(str_to_encode.encode("utf-8"))
             directory_name = hasher.hexdigest()
-            files_directory = Path(tempfile.gettempdir()) / ".tdlib_files" / directory_name
-
-        self.files_directory = Path(files_directory)
+            self.files_directory = Path(tempfile.gettempdir()) / ".tdlib_files" / directory_name
+            # only the default directory, never one the caller chose
+            self._create_private_files_directory()
 
         self._authorized = False
         self._stopped = threading.Event()
@@ -157,14 +166,40 @@ class Telegram:
             worker = SimpleWorker
         self.worker: BaseWorker = worker(queue=self._workers_queue)
 
+        # the listener thread and the calling thread both write these two maps
         self._results: dict[str, AsyncResult] = {}
+        self._results_lock = threading.Lock()
         self._update_handlers: defaultdict[str, list[Callable]] = defaultdict(list)
+        self._handlers_lock = threading.Lock()
 
         self._tdjson = TDJson(library_path=library_path, verbosity=tdlib_verbosity)
         self._run()
 
         if login:
             self.login()
+
+    def _create_private_files_directory(self) -> None:
+        # the default directory sits in the shared system temp dir and holds the
+        # tdlib session database, so no other local user may read it
+        try:
+            self.files_directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+
+            path_info = self.files_directory.lstat()
+
+            if not stat.S_ISDIR(path_info.st_mode) or path_info.st_uid != os.getuid():
+                # `chmod` follows symlinks, so tightening a path somebody else
+                # put here would change the mode of whatever it points at
+                logger.warning(
+                    "%s is not a directory owned by the current user, leaving its permissions alone",
+                    self.files_directory,
+                )
+                return
+
+            self.files_directory.chmod(0o700)
+        except OSError:
+            # a filesystem without Unix modes is a worse place to keep the
+            # database, but not a reason to refuse to build a client
+            logger.warning("Could not restrict %s to the current user", self.files_directory, exc_info=True)
 
     def stop(self, close_timeout: float = DEFAULT_CLOSE_TIMEOUT) -> None:
         """
@@ -204,6 +239,11 @@ class Telegram:
             if hasattr(self, "_tdjson"):
                 self._tdjson.stop()
         finally:
+            # the listener is joined, so it cannot register a result any more.
+            # A caller that keeps sending after `stop` still can.
+            with self._results_lock:
+                self._results.clear()
+
             self._shutdown_complete.set()
 
     def _close(self, timeout: float = DEFAULT_CLOSE_TIMEOUT) -> None:
@@ -662,22 +702,40 @@ class Telegram:
         if not request_id:
             logger.debug("request_id has not been found in the update")
         else:
-            async_result = self._results.get(request_id)
+            with self._results_lock:
+                async_result = self._results.get(request_id)
 
         if not async_result:
             logger.debug("async_result has not been found in by request_id=%s", request_id)
         else:
+            # `parse_update` wakes a waiter that can call back into
+            # `_forget_result`, so it must not run under the lock
             done = async_result.parse_update(update)
 
             if done:
-                self._results.pop(request_id, None)
+                self._forget_result(request_id, async_result)
 
         return async_result
+
+    def _forget_result(self, result_id: str, result: AsyncResult | None = None) -> None:
+        with self._results_lock:
+            if result is not None and self._results.get(result_id) is not result:
+                # a fixed id can be reused, so the entry under it now may be a
+                # later request that nobody has given up on
+                return
+
+            self._results.pop(result_id, None)
 
     def _run_handlers(self, update: dict[Any, Any]) -> None:
         update_type: str = update.get("@type", "unknown")
 
-        for handler in self._update_handlers[update_type] + self._update_handlers[ANY_UPDATE_HANDLER_TYPE]:
+        with self._handlers_lock:
+            handlers = [
+                *self._update_handlers.get(update_type, ()),
+                *self._update_handlers.get(ANY_UPDATE_HANDLER_TYPE, ()),
+            ]
+
+        for handler in handlers:
             try:
                 self._workers_queue.put((handler, update), timeout=self._queue_put_timeout)
             except queue.Full:
@@ -687,11 +745,13 @@ class Telegram:
         """
         Remove a handler with the specified type
         """
-        try:
-            self._update_handlers[handler_type].remove(func)
-        except (ValueError, KeyError):
-            # not in the list
-            pass
+        with self._handlers_lock:
+            try:
+                # `.get`, so removing an unregistered type does not add it to the map
+                self._update_handlers.get(handler_type, []).remove(func)
+            except ValueError:
+                # not in the list
+                pass
 
     def add_message_handler(self, func: Callable) -> None:
         self.add_update_handler(MESSAGE_HANDLER_TYPE, func)
@@ -708,8 +768,9 @@ class Telegram:
         A function registered under both a concrete type and `ANY_UPDATE_HANDLER_TYPE`
         is called twice for an update of that type.
         """
-        if func not in self._update_handlers[handler_type]:
-            self._update_handlers[handler_type].append(func)
+        with self._handlers_lock:
+            if func not in self._update_handlers[handler_type]:
+                self._update_handlers[handler_type].append(func)
 
     def _send_data(
         self,
@@ -723,28 +784,36 @@ class Telegram:
         If `block`is True, waits for the result
         """
 
-        if "@extra" not in data:
-            data["@extra"] = {}
+        if not result_id:
+            result_id = data.get("@extra", {}).get("request_id")
 
-        if not result_id and "request_id" in data["@extra"]:
-            result_id = data["@extra"]["request_id"]
+        with self._results_lock:
+            if result_id:
+                pending = self._results.get(result_id)
 
-        if result_id:
-            pending = self._results.get(result_id)
+                if pending is not None and not pending._ready.is_set():
+                    # Overwriting the entry would leave `pending` unreachable from
+                    # `_update_async_result`, so nothing would ever resolve it and
+                    # anyone waiting on it would block forever.
+                    # `data` is still untouched here, so the caller can send the
+                    # same dict again once the pending request is done.
+                    raise RuntimeError(
+                        f"A request with id={result_id} is already in flight. "
+                        "Authorization calls share a fixed request id, so they cannot be made concurrently."
+                    )
 
-            if pending is not None and not pending._ready.is_set():
-                # Overwriting the entry would leave `pending` unreachable from
-                # `_update_async_result`, so nothing would ever resolve it and
-                # anyone waiting on it would block forever.
-                raise RuntimeError(
-                    f"A request with id={result_id} is already in flight. "
-                    "Authorization calls share a fixed request id, so they cannot be made concurrently."
-                )
+            async_result = AsyncResult(client=self, result_id=result_id)
+            data.setdefault("@extra", {})["request_id"] = async_result.id
+            self._results[async_result.id] = async_result
 
-        async_result = AsyncResult(client=self, result_id=result_id)
-        data["@extra"]["request_id"] = async_result.id
-        self._results[async_result.id] = async_result
-        self._tdjson.send(data)
+        try:
+            self._tdjson.send(data)
+        except Exception:
+            # the request never left, so the entry would stay pending forever and
+            # keep a fixed id in flight for the life of the client
+            self._forget_result(async_result.id, async_result)
+            raise
+
         async_result.request = data
 
         if block:

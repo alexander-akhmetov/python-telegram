@@ -2,8 +2,8 @@
 Changelog
 =========
 
-[Unreleased]
-------------
+[2.0.0] - 2026-08-23
+--------------------
 
 - tdlib 1.8.31 is replaced by tdlib 1.8.66.
 - ``python-telegram`` is now published as four platform wheels instead of one ``py3-none-any`` wheel: ``manylinux_2_28_x86_64``, ``manylinux_2_28_aarch64``, ``macosx_11_0_arm64`` and ``macosx_10_15_x86_64``. Each bundles a ``tdlib`` that links OpenSSL and zlib statically, so it needs nothing from the system.

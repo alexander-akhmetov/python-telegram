@@ -48,4 +48,9 @@ class SimpleWorker(BaseWorker):
 
     def stop(self) -> None:
         self._is_enabled = False
+
+        if threading.current_thread() is self._thread:
+            # a handler calling stop() runs on this thread, and joining it raises
+            return
+
         self._thread.join()

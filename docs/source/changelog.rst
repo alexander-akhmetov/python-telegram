@@ -6,6 +6,8 @@ Changelog
 ------------
 
 - ``add_update_handler(ANY_UPDATE_HANDLER_TYPE, func)`` registers a handler for every object tdlib returns, whatever its ``@type``. The responses to your own method calls arrive there too, not only the updates the server pushes (`#79 <https://github.com/alexander-akhmetov/python-telegram/issues/79>`_).
+- ``stop`` can now be called from an update handler. It used to raise ``RuntimeError: cannot join current thread`` and leave the tdlib client alive, because the worker joined the thread the handler runs on.
+- ``idle`` now returns only after the tdlib client is destroyed. It used to return as soon as ``stop`` marked the client stopped, which happens before the listener thread is joined, so a script that exited right after ``idle`` could kill the daemon threads part way through the shutdown.
 
 [2.0.0] - 2026-08-23
 --------------------

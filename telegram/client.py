@@ -148,6 +148,7 @@ class Telegram:
 
         self._authorized = False
         self._stopped = threading.Event()
+        self._shutdown_complete = threading.Event()
 
         # todo: move to worker
         self._workers_queue: queue.Queue = queue.Queue(maxsize=default_workers_queue_size)
@@ -188,13 +189,22 @@ class Telegram:
             logger.exception("Could not close the tdlib session cleanly, stopping anyway")
 
         self._stopped.set()
-        self.worker.stop()
 
-        # wait for the tdjson listener to stop
-        self._td_listener.join()
+        try:
+            self.worker.stop()
+        except Exception:
+            # `worker` is a constructor argument, and a third-party one raising
+            # here must not leave the tdlib client alive
+            logger.exception("Could not stop the worker, stopping anyway")
 
-        if hasattr(self, "_tdjson"):
-            self._tdjson.stop()
+        try:
+            # wait for the tdjson listener to stop
+            self._td_listener.join()
+
+            if hasattr(self, "_tdjson"):
+                self._tdjson.stop()
+        finally:
+            self._shutdown_complete.set()
 
     def _close(self, timeout: float = DEFAULT_CLOSE_TIMEOUT) -> None:
         """
@@ -752,13 +762,14 @@ class Telegram:
     ) -> None:
         """
         Blocks until one of the exit signals is received.
-        When a signal is received, calls `stop`.
+        When a signal is received, calls `stop` and returns once the client
+        is fully stopped.
         """
 
         for sig in stop_signals:
             signal.signal(sig, self._stop_signal_handler)
 
-        self._stopped.wait()
+        self._shutdown_complete.wait()
 
     def _stop_signal_handler(self, signum: int, frame: FrameType | None = None) -> None:
         logger.info("Signal %s received!", signum)

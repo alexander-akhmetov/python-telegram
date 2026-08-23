@@ -57,12 +57,110 @@ class TestTelegram:
         exp_data = {
             "@type": "sendMessage",
             "chat_id": chat_id,
+            "topic_id": None,
+            "reply_to": None,
+            "options": None,
+            "reply_markup": None,
             "input_message_content": {
                 "@type": "inputMessageText",
                 "text": {
                     "@type": "formattedText",
                     "text": text,
                     "entities": [],
+                },
+            },
+            "@extra": {
+                "request_id": async_result.id,
+            },
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
+    def test_send_message_sends_the_optional_objects(self, telegram):
+        chat_id = 1
+        text = "Hello world"
+        topic_id = {"@type": "messageTopicForum", "forum_topic_id": 2}
+
+        async_result = telegram.send_message(
+            chat_id=chat_id,
+            text=text,
+            topic_id=topic_id,
+            reply_to={"@type": "inputMessageReplyToMessage", "message_id": 3},
+            options={"@type": "messageSendOptions", "disable_notification": True},
+            reply_markup={"@type": "replyMarkupRemoveKeyboard", "is_personal": False},
+        )
+
+        exp_data = {
+            "@type": "sendMessage",
+            "chat_id": chat_id,
+            "topic_id": {"@type": "messageTopicForum", "forum_topic_id": 2},
+            "reply_to": {"@type": "inputMessageReplyToMessage", "message_id": 3},
+            "options": {"@type": "messageSendOptions", "disable_notification": True},
+            "reply_markup": {"@type": "replyMarkupRemoveKeyboard", "is_personal": False},
+            "input_message_content": {
+                "@type": "inputMessageText",
+                "text": {
+                    "@type": "formattedText",
+                    "text": text,
+                    "entities": [],
+                },
+            },
+            "@extra": {
+                "request_id": async_result.id,
+            },
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
+    def test_send_message_accepts_entities_positionally(self, telegram):
+        entities = [{"@type": "textEntity", "offset": 0, "length": 5}]
+
+        async_result = telegram.send_message(1, "Hello world", entities)
+
+        exp_data = {
+            "@type": "sendMessage",
+            "chat_id": 1,
+            "topic_id": None,
+            "reply_to": None,
+            "options": None,
+            "reply_markup": None,
+            "input_message_content": {
+                "@type": "inputMessageText",
+                "text": {
+                    "@type": "formattedText",
+                    "text": "Hello world",
+                    "entities": entities,
+                },
+            },
+            "@extra": {
+                "request_id": async_result.id,
+            },
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
+    def test_send_message_accepts_an_element_positionally(self, telegram):
+        entities = [{"@type": "textEntity", "offset": 0, "length": 12}]
+        parsed = AsyncResult(client=telegram)
+        parsed.update = {"text": "Hello world!", "entities": entities}
+        parsed._ready.set()
+
+        with patch.object(telegram, "parse_text_entities", return_value=parsed):
+            async_result = telegram.send_message(1, Spoiler("Hello world!"))
+
+        exp_data = {
+            "@type": "sendMessage",
+            "chat_id": 1,
+            "topic_id": None,
+            "reply_to": None,
+            "options": None,
+            "reply_markup": None,
+            "input_message_content": {
+                "@type": "inputMessageText",
+                "text": {
+                    "@type": "formattedText",
+                    "text": "Hello world!",
+                    "entities": entities,
                 },
             },
             "@extra": {

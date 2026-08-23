@@ -118,6 +118,8 @@ You can also use `call_method` to call any [tdlib method](https://core.telegram.
 tg.call_method("getUser", params={"user_id": user_id})
 ```
 
+`send_message` passes `topic_id`, `reply_to`, `options` and `reply_markup` to tdlib as they are, so a message goes into a forum topic with `tg.send_message(chat_id, "Hello", topic_id={"@type": "messageTopicForum", "forum_topic_id": 2})`. A tdlib that does not know one of these fields ignores it and sends the message without it, with no error.
+
 More examples can be found in the [/examples/ directory](/examples/).
 
 ---

@@ -31,6 +31,9 @@ logger = logging.getLogger(__name__)
 
 MESSAGE_HANDLER_TYPE: str = "updateNewMessage"
 
+# no tdlib @type can be "*", so this cannot shadow a real update type
+ANY_UPDATE_HANDLER_TYPE: str = "*"
+
 # how long `stop` waits for tdlib to report the CLOSED authorization state
 DEFAULT_CLOSE_TIMEOUT: float = 5.0
 
@@ -674,7 +677,7 @@ class Telegram:
     def _run_handlers(self, update: dict[Any, Any]) -> None:
         update_type: str = update.get("@type", "unknown")
 
-        for handler in self._update_handlers[update_type]:
+        for handler in self._update_handlers[update_type] + self._update_handlers[ANY_UPDATE_HANDLER_TYPE]:
             try:
                 self._workers_queue.put((handler, update), timeout=self._queue_put_timeout)
             except queue.Full:
@@ -694,6 +697,17 @@ class Telegram:
         self.add_update_handler(MESSAGE_HANDLER_TYPE, func)
 
     def add_update_handler(self, handler_type: str, func: Callable) -> None:
+        """
+        Register `func` for the objects tdlib returns with `@type` equal to `handler_type`.
+
+        With `ANY_UPDATE_HANDLER_TYPE` as the type, `func` receives every object tdlib
+        returns, whatever its `@type`. That includes the responses to your own method
+        calls, such as `{'@type': 'ok'}` and `{'@type': 'error'}`, not only the updates
+        the server pushes.
+
+        A function registered under both a concrete type and `ANY_UPDATE_HANDLER_TYPE`
+        is called twice for an update of that type.
+        """
         if func not in self._update_handlers[handler_type]:
             self._update_handlers[handler_type].append(func)
 

@@ -128,3 +128,22 @@ It calls the ``close`` method of ``tdlib`` and waits until it has finished.
 ``idle`` blocks until you call ``stop`` from another thread, or until the process receives one of the stop signals.
 By default these are ``SIGINT``, ``SIGTERM`` and ``SIGABRT``; you can change them with the ``stop_signals`` parameter.
 When one of them arrives, ``idle`` calls ``stop`` for you, which is why the example above does not call it directly.
+
+Handling every update
+---------------------
+
+To see everything ``tdlib`` sends, register a handler with ``ANY_UPDATE_HANDLER_TYPE``
+instead of a concrete ``@type``:
+
+.. code-block:: python
+
+    from telegram.client import ANY_UPDATE_HANDLER_TYPE
+
+    def any_update_handler(update):
+        print(update['@type'])
+
+    tg.add_update_handler(ANY_UPDATE_HANDLER_TYPE, any_update_handler)
+
+This handler receives every object ``tdlib`` returns, which includes the responses to
+your own method calls, such as ``{'@type': 'ok'}`` and ``{'@type': 'error'}``, and not
+only the updates the server pushes.

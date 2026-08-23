@@ -2,6 +2,11 @@
 Changelog
 =========
 
+[Unreleased]
+------------
+
+- ``add_update_handler(ANY_UPDATE_HANDLER_TYPE, func)`` registers a handler for every object tdlib returns, whatever its ``@type``. The responses to your own method calls arrive there too, not only the updates the server pushes (`#79 <https://github.com/alexander-akhmetov/python-telegram/issues/79>`_).
+
 [2.0.0] - 2026-08-23
 --------------------
 

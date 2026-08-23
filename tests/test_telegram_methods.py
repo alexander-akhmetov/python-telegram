@@ -1,12 +1,12 @@
 import queue
 import threading
 import time
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 import pytest
 
 from telegram import VERSION
-from telegram.client import MESSAGE_HANDLER_TYPE, AuthorizationState, Telegram
+from telegram.client import ANY_UPDATE_HANDLER_TYPE, MESSAGE_HANDLER_TYPE, AuthorizationState, Telegram
 from telegram.text import Spoiler
 from telegram.utils import AsyncResult
 from telegram.worker import SimpleWorker
@@ -185,6 +185,51 @@ class TestTelegram:
         with patch.object(telegram._workers_queue, "put") as mocked_put:
             update = {"@type": "some-type"}
             telegram._run_handlers(update)
+
+            assert mocked_put.call_count == 0
+
+    # "ok" is a response to our own method call, not an update pushed by the server
+    @pytest.mark.parametrize("update_type", ["updateUser", "ok"])
+    def test_run_handlers_any_update_type(self, telegram, update_type):
+        def my_handler():
+            pass
+
+        telegram.add_update_handler(ANY_UPDATE_HANDLER_TYPE, my_handler)
+
+        with patch.object(telegram._workers_queue, "put") as mocked_put:
+            update = {"@type": update_type}
+            telegram._run_handlers(update)
+
+            mocked_put.assert_called_once_with((my_handler, update), timeout=10)
+
+    def test_run_handlers_calls_both_concrete_and_any_update_handlers(self, telegram):
+        def my_message_handler():
+            pass
+
+        def my_any_handler():
+            pass
+
+        telegram.add_message_handler(my_message_handler)
+        telegram.add_update_handler(ANY_UPDATE_HANDLER_TYPE, my_any_handler)
+
+        with patch.object(telegram._workers_queue, "put") as mocked_put:
+            update = {"@type": MESSAGE_HANDLER_TYPE}
+            telegram._run_handlers(update)
+
+            assert mocked_put.call_args_list == [
+                call((my_message_handler, update), timeout=10),
+                call((my_any_handler, update), timeout=10),
+            ]
+
+    def test_remove_update_handler_any_update_type(self, telegram):
+        def my_handler():
+            pass
+
+        telegram.add_update_handler(ANY_UPDATE_HANDLER_TYPE, my_handler)
+        telegram.remove_update_handler(ANY_UPDATE_HANDLER_TYPE, my_handler)
+
+        with patch.object(telegram._workers_queue, "put") as mocked_put:
+            telegram._run_handlers({"@type": "updateUser"})
 
             assert mocked_put.call_count == 0
 

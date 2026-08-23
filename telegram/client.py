@@ -282,15 +282,37 @@ class Telegram:
         chat_id: int,
         text: str | Element,
         entities: list[dict] | None = None,
+        *,
+        topic_id: dict | None = None,
+        reply_to: dict | None = None,
+        options: dict | None = None,
+        reply_markup: dict | None = None,
     ) -> AsyncResult:
         """
         Sends a message to a chat. The chat must be in the tdlib's database.
         If there is no chat in the DB, tdlib returns an error.
         Chat is being saved to the database when the client receives a message or when you call the `get_chats` method.
 
+        https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1send_message.html
+
+        ``topic_id``, ``reply_to``, ``options`` and ``reply_markup`` are sent to tdlib as they are,
+        so their fields are the ones the tdlib you run defines, and a tdlib that does not know a
+        field ignores it. For a request this method does not cover, build it yourself with
+        ``call_method('sendMessage', params={...})``.
+
         Args:
             chat_id
             text
+            entities: text entities of ``text``. Ignored when ``text`` is an ``Element``,
+                which brings its own entities.
+            topic_id: the topic to send the message to, no topic if not set.
+                For example: ``{'@type': 'messageTopicForum', 'forum_topic_id': 2}``
+            reply_to: the message or story to reply to, nothing if not set.
+                For example: ``{'@type': 'inputMessageReplyToMessage', 'message_id': 3}``
+            options: how to send the message, tdlib's defaults if not set.
+                For example: ``{'@type': 'messageSendOptions', 'disable_notification': True}``
+            reply_markup: the reply markup, none if not set. Bots only.
+                For example: ``{'@type': 'replyMarkupRemoveKeyboard', 'is_personal': False}``
 
         Returns:
             AsyncResult
@@ -321,9 +343,13 @@ class Telegram:
         else:
             updated_text = text
 
-        data = {
+        data: dict[str, Any] = {
             "@type": "sendMessage",
             "chat_id": chat_id,
+            "topic_id": topic_id,
+            "reply_to": reply_to,
+            "options": options,
+            "reply_markup": reply_markup,
             "input_message_content": {
                 "@type": "inputMessageText",
                 "text": {

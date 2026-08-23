@@ -137,7 +137,7 @@ instead of a concrete ``@type``:
 
 .. code-block:: python
 
-    from telegram.client import ANY_UPDATE_HANDLER_TYPE, Telegram
+    from telegram.client import ANY_UPDATE_HANDLER_TYPE
 
     def any_update_handler(update):
         print(update['@type'])

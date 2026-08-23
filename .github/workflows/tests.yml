@@ -30,3 +30,35 @@ jobs:
 
       - name: Tests
         run: tox
+
+  # hatch_build.py and the sdist exclude never run in the tox matrix, and a
+  # binary leaking into the sdist would only show up at release time.
+  packaging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Build with no target set
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+          python -m build
+
+      - name: Check the sdist carries no binary
+        run: |
+          if tar tzf dist/*.tar.gz | grep -q 'telegram/lib/'; then
+            echo "::error::the sdist contains telegram/lib/"
+            exit 1
+          fi
+
+      # With no PYTHON_TELEGRAM_TDLIB_TARGET the hook must do nothing, which is
+      # what `pip install -e .` relies on.
+      - name: Check the untargeted wheel is pure
+        run: ls dist/*-py3-none-any.whl

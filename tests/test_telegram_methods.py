@@ -201,14 +201,14 @@ class TestTelegram:
 
     def test_get_web_page_instant_view(self, telegram):
         url = "https://yandex.ru/"
-        force_full = False
+        only_local = False
 
-        async_result = telegram.get_web_page_instant_view(url=url, force_full=force_full)
+        async_result = telegram.get_web_page_instant_view(url=url, only_local=only_local)
 
         exp_data = {
             "@type": "getWebPageInstantView",
             "url": url,
-            "force_full": force_full,
+            "only_local": only_local,
             "@extra": {"request_id": async_result.id},
         }
 
@@ -351,7 +351,6 @@ class TestTelegram:
         }
         exp_data = {
             "@type": "setTdlibParameters",
-            "parameters": parameters,
             **parameters,
             "database_encryption_key": "a2V5",
             "@extra": {"request_id": "updateAuthorizationState"},
@@ -409,9 +408,10 @@ class TestAuthorizationState:
     @pytest.mark.parametrize(
         "state",
         [
-            # every authorizationState type tdlib 1.8.31 can emit
+            # every authorizationState type tdlib 1.8.66 can emit
             "authorizationStateWaitTdlibParameters",
             "authorizationStateWaitPhoneNumber",
+            "authorizationStateWaitPremiumPurchase",
             "authorizationStateWaitEmailAddress",
             "authorizationStateWaitEmailCode",
             "authorizationStateWaitOtherDeviceConfirmation",
@@ -426,6 +426,9 @@ class TestAuthorizationState:
     )
     def test_every_tdlib_state_is_known(self, state):
         assert AuthorizationState(state).value == state
+
+    def test_unknown_state_does_not_raise(self):
+        assert AuthorizationState("authorizationStateFromSomeFutureTdlib") is AuthorizationState.UNKNOWN
 
 
 class TestTelegram__update_async_result:
@@ -484,6 +487,61 @@ class TestTelegram__send_data:
         second = telegram._send_add_proxy()
 
         assert first.id != second.id
+
+    def test_add_proxy_nests_the_proxy_object(self, telegram):
+        telegram.proxy_server = "example.com"
+        telegram.proxy_port = 1080
+        telegram.proxy_type = {"@type": "proxyTypeSocks5"}
+
+        async_result = telegram._send_add_proxy()
+
+        exp_data = {
+            "@type": "addProxy",
+            "proxy": {
+                "@type": "proxy",
+                "server": "example.com",
+                "port": 1080,
+                "type": {"@type": "proxyTypeSocks5"},
+            },
+            "enable": True,
+            "@extra": {"request_id": async_result.id},
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
+    def test_send_phone_number_nests_the_authentication_settings(self, telegram):
+        telegram._send_phone_number()
+
+        exp_data = {
+            "@type": "setAuthenticationPhoneNumber",
+            "phone_number": PHONE,
+            "settings": {
+                "@type": "phoneNumberAuthenticationSettings",
+                "allow_flash_call": False,
+                "is_current_phone_number": True,
+            },
+            "@extra": {"request_id": "updateAuthorizationState"},
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
+
+    def test_import_contacts_sends_imported_contacts(self, telegram):
+        async_result = telegram.import_contacts([{"phone_number": PHONE, "first_name": "Alice", "last_name": ""}])
+
+        exp_data = {
+            "@type": "importContacts",
+            "contacts": [
+                {
+                    "@type": "importedContact",
+                    "phone_number": PHONE,
+                    "first_name": "Alice",
+                    "last_name": "",
+                }
+            ],
+            "@extra": {"request_id": async_result.id},
+        }
+
+        telegram._tdjson.send.assert_called_once_with(exp_data)
 
 
 class TestTelegram__login:
@@ -620,13 +678,23 @@ class TestTelegram__login_non_blocking:
         state = telegram.login(blocking=False)
         assert state == telegram.authorization_state == AuthorizationState.READY
 
-    def test_login_raises_on_state_without_action(self, telegram):
-        telegram.authorization_state = AuthorizationState.LOGGING_OUT
+    @pytest.mark.parametrize(
+        "state",
+        [
+            AuthorizationState.LOGGING_OUT,
+            # this library cannot complete a Premium purchase, so refusing to
+            # continue is the right outcome
+            AuthorizationState.WAIT_PREMIUM_PURCHASE,
+            AuthorizationState.UNKNOWN,
+        ],
+    )
+    def test_login_raises_on_state_without_action(self, telegram, state):
+        telegram.authorization_state = state
 
         with pytest.raises(RuntimeError) as excinfo:
             telegram.login(blocking=False)
 
-        assert "LOGGING_OUT" in str(excinfo.value)
+        assert state.name in str(excinfo.value)
 
 
 class TestWorkerExceptionHandling:

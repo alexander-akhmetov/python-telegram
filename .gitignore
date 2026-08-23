@@ -9,3 +9,5 @@ MANIFEST
 *.pyc
 .DS_Store
 .vscode
+telegram/lib/
+/tdlib/

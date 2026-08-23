@@ -20,7 +20,7 @@ You can still sign in as a bot here by passing `bot_token` instead of `phone`.
 
 ## Installation
 
-This library requires Python 3.10+ and Linux or MacOS. Windows is not supported.
+This library requires Python 3.10+. Windows is not supported.
 
 ```shell
 pip install python-telegram
@@ -30,11 +30,30 @@ See [documentation](https://python-telegram.readthedocs.io/latest/#installation)
 
 ### tdlib
 
-`python-telegram` comes with a precompiled `tdlib` library for Linux and MacOS. But it is highly recommended to [compile](https://tdlib.github.io/td/build.html) it yourself.
-The precompiled library may not work on some systems, it is dynamically linked and requires specific versions of additional libraries.
+Four wheels bundle a `tdlib` binary. Each one works on Python 3.10 through 3.14:
 
-If you installed `tdlib` system-wide, `python-telegram` finds it automatically.
-Otherwise, pass the path to the compiled library. The file is called `libtdjson.so` on Linux and `libtdjson.dylib` on MacOS:
+| Platform | Wheel | Needs at least |
+| --- | --- | --- |
+| Linux x86_64 | `manylinux_2_28_x86_64` | glibc 2.28 |
+| Linux aarch64 | `manylinux_2_28_aarch64` | glibc 2.28 |
+| macOS arm64 | `macosx_11_0_arm64` | macOS 11 |
+| macOS x86_64 | `macosx_10_15_x86_64` | macOS 10.15 |
+
+Those binaries link OpenSSL and zlib statically, so they need nothing from the system.
+
+Anywhere else, pip installs the source distribution, which carries no binary. On musl, on
+32-bit ARM, or with an older glibc, [compile](https://tdlib.github.io/td/build.html) `tdlib`
+yourself.
+
+`python-telegram` looks for the library in this order, and logs which one it used:
+
+1. the `library_path` argument
+2. the `PYTHON_TELEGRAM_TDLIB_PATH` environment variable
+3. a system-wide `tdjson`
+4. the bundled binary
+
+A system-wide `tdlib` therefore wins over the bundled one. To point at a specific build,
+pass its path. The file is called `libtdjson.so` on Linux and `libtdjson.dylib` on macOS:
 
 ```python
 tg = Telegram(
@@ -42,6 +61,9 @@ tg = Telegram(
     library_path="/usr/local/lib/libtdjson.so",
 )
 ```
+
+If nothing can be found, `TDJson()` raises `TDLibNotFoundError`, an `OSError` subclass whose
+message names the platform, the paths tried and the overrides.
 
 ### Docker
 

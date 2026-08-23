@@ -44,6 +44,7 @@ class AuthorizationState(enum.Enum):
     # encryption key in setTdlibParameters
     WAIT_ENCRYPTION_KEY = "authorizationStateWaitEncryptionKey"
     WAIT_PHONE_NUMBER = "authorizationStateWaitPhoneNumber"
+    WAIT_PREMIUM_PURCHASE = "authorizationStateWaitPremiumPurchase"
     WAIT_EMAIL_ADDRESS = "authorizationStateWaitEmailAddress"
     WAIT_EMAIL_CODE = "authorizationStateWaitEmailCode"
     WAIT_OTHER_DEVICE_CONFIRMATION = "authorizationStateWaitOtherDeviceConfirmation"
@@ -52,6 +53,17 @@ class AuthorizationState(enum.Enum):
     LOGGING_OUT = "authorizationStateLoggingOut"
     CLOSING = "authorizationStateClosing"
     CLOSED = "authorizationStateClosed"
+    UNKNOWN = "unknown"
+
+    @classmethod
+    def _missing_(cls, value: object) -> AuthorizationState:
+        """
+        tdlib adds authorization states over time, and a state this library has
+        never heard of must not turn into a ValueError halfway through login.
+        """
+        logger.warning("Unknown authorization state %r, treating it as UNKNOWN", value)
+
+        return cls.UNKNOWN
 
 
 class Telegram:
@@ -351,7 +363,7 @@ class Telegram:
         """
 
         for contact in contacts:
-            contact["@type"] = "contact"
+            contact["@type"] = "importedContact"
 
         data = {
             "@type": "importContacts",
@@ -564,16 +576,17 @@ class Telegram:
 
         return self._send_data({"@type": "createBasicGroupChat", "basic_group_id": basic_group_id})
 
-    def get_web_page_instant_view(self, url: str, force_full: bool = False) -> AsyncResult:
+    def get_web_page_instant_view(self, url: str, only_local: bool = False) -> AsyncResult:
         """
         Use this method to request instant preview of a webpage.
         Returns error with 404 if there is no preview for this webpage.
 
         Args:
             url: URL of a webpage
-            force_full: If true, the full instant view for the web page will be returned
+            only_local: If true, the instant view is built from locally available
+                        information only, without any network requests
         """
-        data = {"@type": "getWebPageInstantView", "url": url, "force_full": force_full}
+        data = {"@type": "getWebPageInstantView", "url": url, "only_local": only_local}
 
         return self._send_data(data)
 
@@ -864,7 +877,6 @@ class Telegram:
         }
         data: dict[str, typing.Any] = {
             "@type": "setTdlibParameters",
-            "parameters": parameters,
             # since tdlib 1.8.6
             "database_encryption_key": self._database_encryption_key,
             **parameters,
@@ -897,8 +909,11 @@ class Telegram:
         data = {
             "@type": "setAuthenticationPhoneNumber",
             "phone_number": self.phone,
-            "allow_flash_call": False,
-            "is_current_phone_number": True,
+            "settings": {
+                "@type": "phoneNumberAuthenticationSettings",
+                "allow_flash_call": False,
+                "is_current_phone_number": True,
+            },
         }
 
         return self._send_data(data, result_id="updateAuthorizationState")
@@ -907,10 +922,13 @@ class Telegram:
         logger.info("Sending addProxy")
         data = {
             "@type": "addProxy",
-            "server": self.proxy_server,
-            "port": self.proxy_port,
+            "proxy": {
+                "@type": "proxy",
+                "server": self.proxy_server,
+                "port": self.proxy_port,
+                "type": self.proxy_type,
+            },
             "enable": True,
-            "type": self.proxy_type,
         }
 
         # no fixed result_id: the result is never awaited, and `login` may send

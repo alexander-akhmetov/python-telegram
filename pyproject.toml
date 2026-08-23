@@ -39,11 +39,17 @@ Changelog = "https://python-telegram.readthedocs.io/latest/changelog.html"
 [tool.hatch.version]
 path = "telegram/__init__.py"
 
-# Everything under telegram/ that git tracks, which covers the precompiled
-# libtdjson binaries in lib/ and py.typed.
+# Everything under telegram/ that git tracks, which is the python sources and
+# py.typed. The libtdjson binary is not in git: hatch_build.py adds it to the
+# wheel and retags it, driven by PYTHON_TELEGRAM_TDLIB_TARGET and tdlib.lock.
 [tool.hatch.build.targets.wheel]
 packages = ["telegram"]
 
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "hatch_build.py"
+
+# The sdist must never carry a binary: it is the fallback for the platforms no
+# wheel covers, and a binary in it would work on exactly one of them.
 [tool.hatch.build.targets.sdist]
 include = [
     "telegram",
@@ -52,6 +58,7 @@ include = [
     "CONTRIBUTING.md",
     "LICENSE",
 ]
+exclude = ["telegram/lib"]
 
 [tool.ruff]
 line-length = 119

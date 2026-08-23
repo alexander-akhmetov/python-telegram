@@ -2,6 +2,24 @@
 Changelog
 =========
 
+[Unreleased]
+------------
+
+- tdlib 1.8.31 is replaced by tdlib 1.8.66.
+- ``python-telegram`` is now published as four platform wheels instead of one ``py3-none-any`` wheel: ``manylinux_2_28_x86_64``, ``manylinux_2_28_aarch64``, ``macosx_11_0_arm64`` and ``macosx_10_15_x86_64``. Each bundles a ``tdlib`` that links OpenSSL and zlib statically, so it needs nothing from the system.
+- The bundled binary now works on Apple Silicon. The old one was x86_64 only and ``ctypes`` refused to load it (`#377 <https://github.com/alexander-akhmetov/python-telegram/issues/377>`_).
+- The bundled Linux binary no longer needs OpenSSL 1.1, which reached end of life in 2023 and is absent from Debian 12+, Ubuntu 22.04+ and RHEL 9. Importing the library in those images failed with ``libssl.so.1.1: cannot open shared object file``.
+- Installing from the source distribution no longer gives you a ``tdlib`` binary. The sdist is the fallback for the platforms the four wheels do not cover, so install ``tdlib`` system-wide or pass ``library_path``.
+- The library can now be pointed at a specific ``tdlib`` with the ``PYTHON_TELEGRAM_TDLIB_PATH`` environment variable. The search order is ``library_path``, then that variable, then a system-wide ``tdjson``, then the bundled binary. Which one was used is logged.
+- When no library can be found or loaded, ``TDJson`` raises ``TDLibNotFoundError`` instead of a raw ``dlopen`` message. It subclasses ``OSError``, which is what ``ctypes.CDLL`` used to raise, so existing handlers keep working.
+- Login no longer fails with a ``ValueError`` on ``authorizationStateWaitPremiumPurchase``, and an authorization state this library has never heard of now resolves to ``AuthorizationState.UNKNOWN`` instead of raising.
+
+Breaking changes, from the tdlib 1.8.66 signatures:
+
+- ``get_web_page_instant_view`` takes ``only_local`` instead of ``force_full``. tdlib removed ``force_full``; ``only_local`` means something different, "use locally available information only, without any network request".
+- ``import_contacts`` now sends each contact as an ``importedContact`` rather than a ``contact``. That is what ``importContacts`` takes in 1.8.66.
+- ``addProxy`` now nests the server, port and type inside a ``proxy`` object. Code that calls ``call_method('addProxy', ...)`` directly has to be updated.
+
 [1.0.0] - 2026-07-25
 --------------------
 

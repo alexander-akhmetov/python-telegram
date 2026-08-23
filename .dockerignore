@@ -6,3 +6,4 @@ telegram/lib
 .tox
 .mypy_cache
 MANIFEST
+tdlib

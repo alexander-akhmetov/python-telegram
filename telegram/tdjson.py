@@ -4,36 +4,75 @@ import ctypes.util
 import importlib.resources
 import json
 import logging
+import os
 import platform
 from ctypes import CDLL, CFUNCTYPE, c_char_p, c_double, c_int, c_longlong, c_void_p
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+TDLIB_PATH_ENV_VAR = "PYTHON_TELEGRAM_TDLIB_PATH"
+
+_OVERRIDES_HINT = (
+    "Only the linux x86_64, linux aarch64, macOS arm64 and macOS x86_64 wheels bundle a "
+    "libtdjson; the sdist never does. Install tdlib system-wide so ctypes can find it, or "
+    f"point python-telegram at your own build with the {TDLIB_PATH_ENV_VAR} environment "
+    "variable or the TDJson(library_path=...) argument."
+)
 
 
 class ClientDestroyedError(RuntimeError):
     """Raised when a TDJson client is used after it has been stopped"""
 
 
-def _get_tdjson_lib_path() -> str:
+class TDLibNotFoundError(OSError):
+    """
+    Raised when no libtdjson can be found or loaded.
+
+    Subclasses OSError because that is what ctypes.CDLL raises, so callers that
+    already handle a failed load keep working.
+    """
+
+
+def _bundled_lib_path() -> Path:
+    name = "libtdjson.dylib" if platform.system().lower() == "darwin" else "libtdjson.so"
+
+    return Path(str(importlib.resources.files("telegram").joinpath(f"lib/{name}")))
+
+
+def _resolve_tdjson_library() -> tuple[str, str]:
+    """Returns the path of the libtdjson to load and the name of the source it came from."""
+    env_path = os.environ.get(TDLIB_PATH_ENV_VAR)
+
+    if env_path:
+        return env_path, "env"
+
     system_library = ctypes.util.find_library("tdjson")
 
     if system_library is not None:
-        return system_library
+        return system_library, "system"
 
-    if platform.system().lower() == "darwin":
-        lib_name = "darwin/libtdjson.dylib"
-    else:
-        lib_name = "linux/libtdjson.so"
+    bundled = _bundled_lib_path()
 
-    return str(importlib.resources.files("telegram").joinpath(f"lib/{lib_name}"))
+    if bundled.is_file():
+        return str(bundled), "bundled"
+
+    raise TDLibNotFoundError(
+        f"No libtdjson found for {platform.system()} {platform.machine()}. "
+        f"{TDLIB_PATH_ENV_VAR} is not set, ctypes.util.find_library('tdjson') found nothing, "
+        f"and there is no bundled binary at {bundled}. {_OVERRIDES_HINT}"
+    )
 
 
 class TDJson:
     def __init__(self, library_path: str | None = None, verbosity: int = 2) -> None:
         if library_path is None:
-            library_path = _get_tdjson_lib_path()
-        logger.info('Using shared library "%s"', library_path)
+            library_path, source = _resolve_tdjson_library()
+        else:
+            source = "library_path"
+
+        logger.info('Using shared library "%s" (found via: %s)', library_path, source)
 
         self._build_client(library_path, verbosity)
 
@@ -42,7 +81,13 @@ class TDJson:
             self.stop()
 
     def _build_client(self, library_path: str, verbosity: int) -> None:
-        self._tdjson = CDLL(library_path)
+        try:
+            self._tdjson = CDLL(library_path)
+        except OSError as error:
+            raise TDLibNotFoundError(
+                f"Failed to load libtdjson from {library_path} on "
+                f"{platform.system()} {platform.machine()}: {error}. {_OVERRIDES_HINT}"
+            ) from error
 
         # load TDLib functions from shared library
         self._td_json_client_create = self._tdjson.td_json_client_create

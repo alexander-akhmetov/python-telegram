@@ -14,13 +14,11 @@ permissions:
   contents: read
 
 jobs:
+  # One job for all four wheels: each is a zip around a prebuilt binary, so
+  # nothing here is compiled and no matrix is needed.
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions:
-      contents: write # create the release and upload the artifacts
-      id-token: write # OIDC token for the provenance attestation
-      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
         with:
@@ -31,57 +29,171 @@ jobs:
           python-version: "3.13"
 
       # A tag can point at any commit, so do not assume the test workflow
-      # already passed here. One Python version, not the full tox matrix.
+      # already passed here. `verify` does not cover this: it runs the smoke
+      # test against the built binary, not the unit suite. One Python version,
+      # not the full tox matrix.
       - name: Test
         run: |
           python -m pip install --upgrade pip
-          pip install . -r tests/requirements.txt
-          pytest -v
+          pip install -e . -r tests/requirements.txt
+          pytest -q
 
-      - name: Build
+      # Plain curl against the public release URL. `gh release download` with a
+      # repo-scoped GITHUB_TOKEN is ambiguous about which repository it means.
+      - name: Download the tdlib binaries
         run: |
+          set -euo pipefail
+          mkdir -p tdlib
+          repo="$(jq -r .repository tdlib.lock)"
+          release_tag="$(jq -r .release_tag tdlib.lock)"
+
+          jq -r '.targets | to_entries[] | "\(.value.sha256)  tdlib/\(.value.asset)"' tdlib.lock > tdlib/SHA256SUMS
+
+          for asset in $(jq -r '.targets[].asset' tdlib.lock); do
+            curl -fsSL --retry 3 -o "tdlib/${asset}" \
+              "https://github.com/${repo}/releases/download/${release_tag}/${asset}"
+          done
+
+          sha256sum --check --strict tdlib/SHA256SUMS
+
+      # hatch_build.py re-checks the same digest out of tdlib.lock, so a
+      # swapped asset is caught twice, independently.
+      - name: Build the wheels and the sdist
+        env:
+          PYTHON_TELEGRAM_TDLIB_DIR: tdlib
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
           pip install build packaging
-          python -m build
+
+          for target in $(jq -r '.targets | keys[]' tdlib.lock); do
+            PYTHON_TELEGRAM_TDLIB_TARGET="${target}" python -m build --wheel
+          done
+
+          python -m build --sdist
 
       # The version is a literal in telegram/__init__.py, so a tag can point at
-      # a commit that still carries the previous version. Catch that before the
-      # upload, which cannot be undone.
-      #
-      # The comparison is on the parsed version, not the string: PEP 440
-      # normalizes a 1.1.0-rc1 tag to 1.1.0rc1 in the filename.
-      - name: Check built version matches the tag
-        env:
-          TAG: ${{ github.ref_name }}
+      # a commit that still carries the previous version.
+      - name: Check the dist against the tag and tdlib.lock
+        run: python scripts/check_dist.py "${GITHUB_REF_NAME}"
+
+      - name: Check the sdist carries no binary
         run: |
-          wheel="$(ls dist/*.whl)"
-          built="$(basename "${wheel}" | cut -d- -f2)"
-          echo "tag=${TAG} built=${built}"
-          python - "${TAG}" "${built}" <<'PY'
-          import sys
-
-          from packaging.version import Version
-
-          tag, built = sys.argv[1], sys.argv[2]
-          if Version(tag) != Version(built):
-              print(f"::error::built version {built} does not match tag {tag}")
-              sys.exit(1)
-          PY
-
-      - name: Attest build provenance
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: "dist/*"
-
-      - name: Create GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" dist/* --generate-notes --verify-tag
+          if tar tzf dist/*.tar.gz | grep -q 'telegram/lib/'; then
+            echo "::error::the sdist contains telegram/lib/"
+            exit 1
+          fi
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist
           path: dist/
           if-no-files-found: error
+
+  # Loads the real binary on every platform it was built for, before anything
+  # is published. Python 3.10 is the oldest version the wheels claim to support.
+  verify:
+    needs: build
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            platform: manylinux_2_28_x86_64
+          - runner: ubuntu-24.04-arm
+            platform: manylinux_2_28_aarch64
+          - runner: macos-15
+            platform: macosx_11_0_arm64
+          - runner: macos-15-intel
+            platform: macosx_10_15_x86_64
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.10"
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+          path: dist/
+
+      # Naming the file, not the project, is what makes this a test: pip
+      # refuses a wheel whose tag this platform does not support, and cannot
+      # quietly fall back to the sdist or to the copy already on PyPI.
+      # --only-binary=:all: keeps the dependencies off sdists too.
+      - name: Install the wheel for this platform
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install --only-binary=:all: dist/*-py3-none-"${PLATFORM}".whl
+
+      - name: Check the installed wheel is the expected one
+        env:
+          EXPECTED: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          python -c 'import importlib.metadata; print(importlib.metadata.distribution("python-telegram").read_text("WHEEL"))' > WHEEL
+          cat WHEEL
+          grep -qx "Tag: py3-none-${EXPECTED}" WHEEL
+
+      # From RUNNER_TEMP, because tests/__init__.py puts the repository root on
+      # sys.path and the working tree's telegram/ has no lib/ to shadow with.
+      - name: Smoke test the installed binary
+        run: cd "${RUNNER_TEMP}" && python "${GITHUB_WORKSPACE}/scripts/smoke_test.py"
+
+      # bullseye is the oldest base the glibc 2.28 floor claims; trixie is this
+      # project's own Dockerfile base. Between them they catch a binary that
+      # needs a newer glibc or an OpenSSL the base image does not carry.
+      - name: Smoke test in Debian containers
+        if: runner.os == 'Linux'
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          for image in python:3.10-slim-bullseye python:3.14-slim-trixie; do
+            echo "::group::${image}"
+            docker run --rm -v "${PWD}:/work" -w /tmp -e PLATFORM "${image}" bash -c '
+              set -e
+              pip install --quiet --upgrade pip
+              pip install --quiet --only-binary=:all: /work/dist/*-py3-none-"${PLATFORM}".whl
+              python /work/scripts/smoke_test.py
+            '
+            echo "::endgroup::"
+          done
+
+  release:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # create the release and upload the artifacts
+      id-token: write # OIDC token for the provenance attestation
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+          path: dist/
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: "dist/*"
+
+      # GH_REPO because this job does not check the repository out: gh resolves
+      # the repository from a git remote otherwise, and there is none here.
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release create "${GITHUB_REF_NAME}" dist/* --generate-notes --verify-tag
 
   # Separate job so the OIDC token is scoped to the pypi environment the
   # trusted publisher is bound to, and so a failed upload can be re-run on its
@@ -90,7 +202,7 @@ jobs:
   # Last, because it is the only irreversible step. A PyPI version can never be
   # uploaded twice; a GitHub release can be deleted and recreated.
   publish-pypi:
-    needs: build
+    needs: release
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:

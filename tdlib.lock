@@ -1,0 +1,32 @@
+{
+  "comment": "Pins the tdlib binaries the platform wheels bundle. Bump it as a reviewed PR: copy the release tag and every sha256 and wheel_platform out of that release's BUILD-INFO.json, so the lock always describes the bytes that were actually built.",
+  "repository": "alexander-akhmetov/tdlib-compiled",
+  "release_tag": "v1.8.66",
+  "tdlib_version": "1.8.66",
+  "targets": {
+    "linux-x86_64": {
+      "asset": "libtdjson-linux-x86_64.so",
+      "bundled_name": "libtdjson.so",
+      "wheel_platform": "manylinux_2_28_x86_64",
+      "sha256": "pending"
+    },
+    "linux-aarch64": {
+      "asset": "libtdjson-linux-aarch64.so",
+      "bundled_name": "libtdjson.so",
+      "wheel_platform": "manylinux_2_28_aarch64",
+      "sha256": "pending"
+    },
+    "macos-arm64": {
+      "asset": "libtdjson-macos-arm64.dylib",
+      "bundled_name": "libtdjson.dylib",
+      "wheel_platform": "macosx_11_0_arm64",
+      "sha256": "pending"
+    },
+    "macos-x86_64": {
+      "asset": "libtdjson-macos-x86_64.dylib",
+      "bundled_name": "libtdjson.dylib",
+      "wheel_platform": "macosx_10_15_x86_64",
+      "sha256": "pending"
+    }
+  }
+}

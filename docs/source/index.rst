@@ -25,7 +25,7 @@ You can still sign in as a bot here by passing ``bot_token`` instead of ``phone`
 Installation
 ------------
 
-This library requires Python 3.10 or higher, and Linux or macOS. Windows is not supported.
+This library requires Python 3.10 or higher. Windows is not supported.
 
 .. code-block:: bash
 
@@ -41,17 +41,47 @@ Now you can start using the library: :ref:`tutorial`.
 tdlib
 ~~~~~
 
-``python-telegram`` comes with a precompiled ``tdlib`` binary for Linux and macOS, so it works without any extra steps.
-That binary is dynamically linked and needs specific versions of other system libraries, so it does not work everywhere.
-Building ``tdlib`` yourself is more reliable. See the `official build instructions <https://github.com/tdlib/td#building>`_,
-and do not forget to install it afterwards:
+Four wheels bundle a ``tdlib`` binary. Each one works on Python 3.10 through 3.14:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Platform
+     - Wheel
+     - Needs at least
+   * - Linux x86_64
+     - ``manylinux_2_28_x86_64``
+     - glibc 2.28
+   * - Linux aarch64
+     - ``manylinux_2_28_aarch64``
+     - glibc 2.28
+   * - macOS arm64
+     - ``macosx_11_0_arm64``
+     - macOS 11
+   * - macOS x86_64
+     - ``macosx_10_15_x86_64``
+     - macOS 10.15
+
+Those binaries link OpenSSL and zlib statically, so they need nothing from the system.
+
+Anywhere else, pip installs the source distribution, which carries no binary. On musl, on
+32-bit ARM, or with a glibc older than 2.28, build ``tdlib`` yourself. See the
+`official build instructions <https://github.com/tdlib/td#building>`_, and do not forget to
+install it afterwards:
 
 .. code-block:: bash
 
     make install
 
-If ``tdlib`` is installed system-wide, ``python-telegram`` finds it automatically.
-Otherwise, pass the path to the compiled library.
+``python-telegram`` looks for the library in this order, and logs which one it used:
+
+1. the ``library_path`` argument
+2. the ``PYTHON_TELEGRAM_TDLIB_PATH`` environment variable
+3. a system-wide ``tdjson``, through ``ctypes.util.find_library``
+4. the binary bundled in the wheel
+
+A system-wide ``tdlib`` therefore wins over the bundled one.
+To point at a specific build, pass its path.
 The file is called ``libtdjson.so`` on Linux and ``libtdjson.dylib`` on macOS:
 
 .. code-block:: python
@@ -63,8 +93,8 @@ The file is called ``libtdjson.so`` on Linux and ``libtdjson.dylib`` on macOS:
         library_path='/usr/local/lib/libtdjson.so',
     )
 
-.. note::
-    Since version ``0.10.0``, the ``tdlib`` binary for Linux that comes with ``python-telegram`` is built on Ubuntu against ``glibc``. Earlier versions were built on Alpine Linux against ``musl``.
+If nothing can be found, ``TDJson()`` raises ``TDLibNotFoundError``, an ``OSError`` subclass
+whose message names the platform, the paths tried and the overrides.
 
 Docker
 ------

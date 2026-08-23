@@ -1,6 +1,8 @@
+# Installs the released PyPI version, not the working tree. There is a wheel
+# for both platforms.
 .PHONY: docker/build
 docker/build:
-	docker build -f Dockerfile . -t akhmetov/python-telegram
+	docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile . -t akhmetov/python-telegram
 
 .PHONY: docker/send-message
 docker/send-message:

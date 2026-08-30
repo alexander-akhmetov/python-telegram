@@ -9,6 +9,10 @@ Changelog
 - ``stop`` can now be called from an update handler. It used to raise ``RuntimeError: cannot join current thread`` and leave the tdlib client alive, because the worker joined the thread the handler runs on.
 - ``idle`` now returns only after the tdlib client is destroyed. It used to return as soon as ``stop`` marked the client stopped, which happens before the listener thread is joined, so a script that exited right after ``idle`` could kill the daemon threads part way through the shutdown.
 - ``send_message`` takes the rest of the arguments of the tdlib ``sendMessage`` method: ``topic_id``, ``reply_to``, ``options`` and ``reply_markup``. They are keyword-only and are sent to tdlib as they are, so a message goes to a forum topic with ``send_message(chat_id, text, topic_id={'@type': 'messageTopicForum', 'forum_topic_id': 2})`` (`#638 <https://github.com/alexander-akhmetov/python-telegram/issues/638>`_).
+- ``Telegram`` can be used as a context manager. Leaving the ``with`` block calls ``stop``, including when the block raises.
+- A constructor that raises now stops the client before propagating. ``Telegram(..., login=True)`` used to leave both threads and the ``tdlib`` client running when ``login`` failed, with no object for the caller to stop them with.
+- A client that is never stopped is now closed at interpreter exit instead of having its listener thread killed mid-``receive``. The hook logs a warning and waits 2 seconds, less than ``stop`` waits.
+- ``stop`` now waits 5 seconds for a running update handler and logs a warning if it is still there. It used to wait forever, so a handler that never returns held up the shutdown, and at interpreter exit it held up the interpreter.
 
 [2.0.0] - 2026-08-23
 --------------------

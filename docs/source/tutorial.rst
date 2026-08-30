@@ -147,3 +147,20 @@ instead of a concrete ``@type``:
 This handler receives every object ``tdlib`` returns, which includes the responses to
 your own method calls, such as ``{'@type': 'ok'}`` and ``{'@type': 'error'}``, and not
 only the updates the server pushes.
+
+You can also use the client as a context manager. Leaving the block calls ``stop``, including when the block raises:
+
+.. code-block:: python
+
+    with Telegram(
+        api_id=123456,
+        api_hash='api_hash',
+        phone='+31611111111',
+        database_encryption_key='changekey123',
+    ) as tg:
+        tg.login()
+        tg.idle()
+
+A client you never stop keeps its listener thread and its ``tdlib`` handle until the process exits.
+At that point an ``atexit`` hook closes the session and logs a warning, but it waits less than ``stop`` does,
+so ``tdlib`` may not finish closing.

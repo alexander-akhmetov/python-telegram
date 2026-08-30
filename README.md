@@ -87,35 +87,37 @@ Basic example:
 from telegram.client import Telegram
 from telegram.text import Spoiler
 
-tg = Telegram(
+# Leaving the `with` block stops the client and closes the tdlib session.
+with Telegram(
     api_id=123456,
     api_hash="api_hash",
     phone="+31611111111",  # you can pass 'bot_token' instead
     database_encryption_key="changekey123",
     files_directory="/tmp/.tdlib_files/",
-)
-tg.login()
+) as tg:
+    tg.login()
 
-# The chat must be in the tdlib database before you can send a message to it.
-# `get_chats` loads up to `limit` chats from the main chat list.
-result = tg.get_chats(limit=100)
-result.wait()
+    # The chat must be in the tdlib database before you can send a message to it.
+    # `get_chats` loads up to `limit` chats from the main chat list.
+    result = tg.get_chats(limit=100)
+    result.wait()
 
-chat_id = 123456789
-result = tg.send_message(chat_id, Spoiler("Hello world!"))
+    chat_id = 123456789
+    result = tg.send_message(chat_id, Spoiler("Hello world!"))
 
-# `tdlib` is asynchronous, so `python-telegram` always returns an `AsyncResult` object.
-# You can receive a result with the `wait` method of this object.
-result.wait()
-print(result.update)
-
-tg.stop()  # You must call `stop` at the end of the script.
+    # `tdlib` is asynchronous, so `python-telegram` always returns an `AsyncResult` object.
+    # You can receive a result with the `wait` method of this object.
+    result.wait()
+    print(result.update)
 ```
+
+Call `tg.stop()` yourself if your code cannot use a `with` block.
 
 You can also use `call_method` to call any [tdlib method](https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1_function.html):
 
 ```python
-tg.call_method("getUser", params={"user_id": user_id})
+with Telegram(...) as tg:
+    tg.call_method("getUser", params={"user_id": user_id})
 ```
 
 `send_message` passes `topic_id`, `reply_to`, `options` and `reply_markup` to tdlib as they are, so a message goes into a forum topic with `tg.send_message(chat_id, "Hello", topic_id={"@type": "messageTopicForum", "forum_topic_id": 2})`. A tdlib that does not know one of these fields ignores it and sends the message without it, with no error.

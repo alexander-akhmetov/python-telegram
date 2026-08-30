@@ -1,0 +1,22 @@
+version = 1
+revision = 3
+requires-python = ">=3.10"
+
+[[package]]
+name = "python-telegram"
+source = { editable = "." }
+dependencies = [
+    { name = "telegram-text" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "telegram-text", specifier = "==0.2.0" }]
+
+[[package]]
+name = "telegram-text"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6e/cf/b707b994ecb759a533e479e57e59ebcf6e806643fff5a53f05743ae817ac/telegram_text-0.2.0.tar.gz", hash = "sha256:ee295a35f2c77246dd9a80c5e1a8deccc598958dff35740697901c632c6121fa", size = 7943, upload-time = "2024-01-13T15:22:44.5Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/1e/88e9126640be7ddfa423d9ae7ac559577ab8877d45e1d32907c02602cdb3/telegram_text-0.2.0-py3-none-any.whl", hash = "sha256:5752744dc5f91f3f7f0ec1becbf10adb86d586d9338e0aef74fd76a7261283ca", size = 9059, upload-time = "2024-01-13T15:22:42.895Z" },
+]
